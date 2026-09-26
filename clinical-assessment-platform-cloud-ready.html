@@ -1,0 +1,3557 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>臨床評估問卷平台 - NDI, DASH, SF-12, TSK & SEE Scale</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // --- Cloud database configuration ---
+        // Replace these placeholders with your Supabase Project URL and publishable/anon key.
+        // NEVER place a secret/service-role key in this browser HTML.
+        const SUPABASE_URL = 'https://jqdtmfgtpjlbtixkfbfb.supabase.co';
+        const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_XPf6ORdtQZasMCtEN4hxlQ_0drFAe6q';
+        const CLOUD_TABLE = 'clinical_records';
+        const CLOUD_ENABLED = typeof window.supabase !== 'undefined' &&
+            SUPABASE_URL.startsWith('https://') && !SUPABASE_URL.includes('PASTE_YOUR_') &&
+            SUPABASE_PUBLISHABLE_KEY && !SUPABASE_PUBLISHABLE_KEY.includes('PASTE_YOUR_');
+        const supabaseClient = CLOUD_ENABLED
+            ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY)
+            : null;
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        turquoise: {
+                            50: '#f0fdfa',
+                            100: '#ccfbf1',
+                            200: '#99f6e4',
+                            300: '#5eead4',
+                            400: '#2dd4bf',
+                            500: '#14b8a6',
+                            600: '#0d9488',
+                            700: '#0f766e',
+                            800: '#115e59',
+                            900: '#134e4a',
+                            950: '#042f2e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SheetJS (Excel Export) -->
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+        }
+        
+        body.font-size-normal { 
+            font-size: 0.8125rem !important; 
+        }
+        body.font-size-normal main { max-width: 64rem; }
+        body.font-size-normal .p-responsive { padding: 1rem !important; }
+
+        body.font-size-large { 
+            font-size: 0.9375rem !important; 
+        }
+        body.font-size-large .p-responsive { padding: 1.5rem !important; }
+
+        body.font-size-xlarge { 
+            font-size: 1.1rem !important; 
+        }
+        body.font-size-xlarge .p-responsive { padding: 2rem !important; }
+
+        /* Dynamic font scaling for inner elements */
+        body.font-size-normal p, body.font-size-normal span, body.font-size-normal label, body.font-size-normal input, body.font-size-normal button { font-size: 0.8125rem; }
+        body.font-size-large p, body.font-size-large span, body.font-size-large label, body.font-size-large input, body.font-size-large button { font-size: 0.9375rem; }
+        body.font-size-xlarge p, body.font-size-xlarge span, body.font-size-xlarge label, body.font-size-xlarge input, body.font-size-xlarge button { font-size: 1.1rem; }
+
+        .unanswered-highlight {
+            border: 2px solid #ef4444 !important;
+            background-color: #fef2f2 !important;
+            border-radius: 0.75rem;
+            animation: pulse-red 1.5s infinite;
+        }
+        @keyframes pulse-red {
+            0%, 100% { border-color: #ef4444; }
+            50% { border-color: #fca5a5; }
+        }
+        
+        .sticky-progress-wrapper {
+            position: sticky !important;
+            top: 4rem !important; /* Stay fixed below the 64px header while scrolling */
+            z-index: 35 !important;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(8px);
+            padding-top: 0.75rem;
+            padding-bottom: 0.75rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid #e2e8f0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Enhanced Progress Bar Styles */
+        .enhanced-progress-container {
+            background: linear-gradient(to right, #f1f5f9, #e2e8f0);
+            border-radius: 9999px;
+            padding: 6px;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.08);
+            border: 1px solid #cbd5e1;
+        }
+        .enhanced-progress-bar {
+            background: linear-gradient(135deg, #0d9488, #14b8a6, #2dd4bf);
+            border-radius: 9999px;
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .enhanced-progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.35) 50%, rgba(255,255,255,0) 100%);
+            animation: shimmer 2s infinite;
+        }
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            body { background: white !important; font-size: 11pt; color: black !important; }
+            .shadow-lg, .shadow-md, .shadow-sm { box-shadow: none !important; }
+            .border { border-color: #d1d5db !important; }
+        }
+    </style>
+
+<style id="clinical-platform-refined-design">
+/* =========================================================
+   Unified visual system
+   ========================================================= */
+:root {
+    --cp-primary: #0f766e;
+    --cp-primary-dark: #115e59;
+    --cp-primary-soft: #f0fdfa;
+    --cp-ink: #0f172a;
+    --cp-muted: #64748b;
+    --cp-line: #e2e8f0;
+    --cp-panel: #ffffff;
+    --cp-page: #f8fafc;
+    --cp-radius: 18px;
+    --cp-shadow: 0 8px 28px rgba(15, 23, 42, .055);
+}
+
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+    background: var(--cp-page);
+}
+
+body {
+    min-width: 320px;
+    overflow-x: clip !important;
+    overflow-y: visible !important;
+    background:
+        radial-gradient(circle at 0% 0%, rgba(20, 184, 166, .07), transparent 32rem),
+        var(--cp-page);
+    color: var(--cp-ink);
+    line-height: 1.65;
+    font-feature-settings: "tnum" 1;
+}
+
+main {
+    width: 100%;
+    max-width: 1280px !important;
+    margin-inline: auto;
+    padding-inline: clamp(16px, 3vw, 40px) !important;
+    padding-top: 24px !important;
+    padding-bottom: 40px !important;
+}
+
+/* Keep every session in the same visual column and width. */
+.tab-content {
+    width: 100%;
+    min-width: 0;
+    margin-inline: auto;
+    border-radius: var(--cp-radius) !important;
+    border-color: var(--cp-line) !important;
+    box-shadow: var(--cp-shadow) !important;
+    overflow: visible;
+    scroll-margin-top: 24px;
+}
+
+.tab-content:not(.hidden) {
+    animation: cp-fade-in .18s ease-out;
+}
+
+@keyframes cp-fade-in {
+    from { opacity: .65; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Consistent panel spacing, including panels using p-6/p-8. */
+.p-responsive {
+    padding: clamp(18px, 2.6vw, 32px) !important;
+}
+
+.tab-content > h2,
+.tab-content > h3 {
+    color: var(--cp-ink);
+    letter-spacing: -.015em;
+}
+
+.tab-content > h2 {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom-color: var(--cp-line) !important;
+}
+
+/* Header/banner alignment */
+#assessor-banner,
+#participant-banner {
+    width: 100%;
+    border-radius: 14px !important;
+    box-shadow: none !important;
+}
+
+#assessor-banner {
+    background: linear-gradient(90deg, #ecfdf5, #f0fdfa) !important;
+}
+
+#participant-banner {
+    background: #fff !important;
+}
+
+/* Stable navigation: equal-width tabs, no shifting between sessions. */
+nav.no-print {
+    position: static !important;
+     top: auto !important;
+     z-index: auto;
+    width: 100%;
+    padding: 8px !important;
+    border-radius: 16px !important;
+    background: rgba(255,255,255,.94) !important;
+    backdrop-filter: blur(14px);
+    box-shadow: 0 8px 24px rgba(15,23,42,.08) !important;
+}
+
+nav.no-print > div {
+    display: grid !important;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 6px !important;
+    width: 100%;
+    min-width: 0 !important;
+}
+
+nav.no-print button {
+    min-width: 0;
+    min-height: 48px;
+    padding: 9px 8px !important;
+    border: 1px solid transparent;
+    border-radius: 11px !important;
+    white-space: normal;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+}
+
+nav.no-print button span:last-child {
+    min-width: 0;
+}
+
+nav.no-print button.bg-teal-700 {
+    background: linear-gradient(135deg, #0f766e, #0d9488) !important;
+    box-shadow: 0 4px 12px rgba(13,148,136,.22);
+}
+
+nav.no-print button:not(.bg-teal-700):hover {
+    border-color: #99f6e4;
+    background: #f0fdfa !important;
+}
+
+nav.no-print button:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+    outline: 3px solid rgba(20,184,166,.35);
+    outline-offset: 2px;
+}
+
+/* Consistent section cards */
+section {
+    min-width: 0;
+}
+
+.ndi-item,
+.dash-item,
+.sf12-item,
+.tsk-item,
+.see-item {
+    width: 100%;
+    min-width: 0;
+    border-radius: 14px !important;
+    border-color: var(--cp-line) !important;
+    transition: border-color .16s ease, box-shadow .16s ease, background .16s ease;
+}
+
+.ndi-item:hover,
+.dash-item:hover,
+.sf12-item:hover,
+.tsk-item:hover,
+.see-item:hover {
+    border-color: #99f6e4 !important;
+    box-shadow: 0 5px 16px rgba(15,118,110,.055);
+}
+
+/* Prevent long Traditional Chinese text from causing horizontal drift. */
+.ndi-item *,
+.dash-item *,
+.sf12-item *,
+.tsk-item *,
+.see-item * {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: normal;
+}
+
+.ndi-item > div:first-child,
+.dash-item > div:first-child,
+.sf12-item > div:first-child,
+.tsk-item > div:first-child,
+.see-item > div:first-child {
+    line-height: 1.75;
+}
+
+/* Stable answer controls */
+input[type="radio"],
+input[type="checkbox"] {
+    accent-color: var(--cp-primary);
+}
+
+label {
+    -webkit-tap-highlight-color: transparent;
+}
+
+.dash-option {
+    min-height: 84px !important;
+    justify-content: center;
+    border-radius: 13px !important;
+}
+
+.dash-option span {
+    overflow-wrap: anywhere;
+}
+
+.dash-option input:checked + span {
+    font-weight: 700;
+}
+
+/* DASH N/A label: smaller than numeric answer labels so it fits clearly inside the circle. */
+.dash-option .dash-na-label {
+    font-size: 10px !important;
+    line-height: 1 !important;
+    letter-spacing: -0.2px;
+}
+
+/* Make question number badges visually consistent. */
+[class*="rounded-full"][class*="bg-teal"],
+[class*="rounded-full"][class*="bg-slate"] {
+    flex-shrink: 0;
+}
+
+/* Assessment timepoint buttons: only the currently selected timepoint is turquoise. */
+.tp-option-btn {
+    background: #fff !important;
+    color: #334155 !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: none !important;
+}
+.tp-option-btn:hover {
+    background: #f0fdfa !important;
+    border-color: #5eead4 !important;
+}
+.tp-option-btn.tp-active {
+    background: rgba(20, 184, 166, .16) !important;
+    color: #0f766e !important;
+    border-color: #14b8a6 !important;
+    box-shadow: inset 0 0 0 1px rgba(20, 184, 166, .18) !important;
+    font-weight: 700 !important;
+}
+.tp-option-btn.tp-active:hover {
+    background: rgba(20, 184, 166, .20) !important;
+    border-color: #0d9488 !important;
+}
+
+/* Show missing assessment timepoint buttons in the same red unanswered state as other required fields. */
+.tp-option-btn.unanswered-highlight {
+    background: #fef2f2 !important;
+    color: #b91c1c !important;
+    border-color: #ef4444 !important;
+    box-shadow: none !important;
+    animation: pulse-red 1.5s infinite;
+}
+
+/* Buttons share one coherent visual language. */
+button {
+    transition: background-color .16s ease, border-color .16s ease,
+                box-shadow .16s ease, transform .16s ease;
+}
+
+button:active {
+    transform: translateY(1px);
+}
+
+button.bg-teal-700,
+button.bg-teal-600 {
+    box-shadow: 0 4px 12px rgba(13,148,136,.14);
+}
+
+/* Tables and report cards stay inside the same column. */
+table {
+    width: 100%;
+    max-width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.table-responsive,
+.overflow-x-auto {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+#summary-report,
+#history-panel,
+[id*="summary"],
+[id*="history"] {
+    min-width: 0;
+    max-width: 100%;
+}
+
+/* Consistent footer/action area */
+.tab-content > .flex:last-child,
+.tab-content > div:last-child.flex {
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+/* Mobile layout: retain one column and eliminate horizontal movement. */
+@media (max-width: 767px) {
+    main {
+        padding-inline: 12px !important;
+        padding-top: 14px !important;
+    }
+
+    nav.no-print {
+        position: static;
+        margin-bottom: 16px !important;
+    }
+
+    nav.no-print > div {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    nav.no-print button {
+        min-height: 44px;
+        font-size: 12px !important;
+        padding: 8px 5px !important;
+    }
+
+    .tab-content {
+        border-radius: 14px !important;
+    }
+
+    .p-responsive {
+        padding: 16px !important;
+    }
+
+    .dash-option {
+        min-height: 66px !important;
+    }
+}
+
+@media (max-width: 420px) {
+    nav.no-print > div {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+/* Accessibility and reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* Print: remove interactive framing while preserving a clean report. */
+@media print {
+    html, body {
+        background: #fff !important;
+    }
+
+    nav.no-print,
+    #assessor-banner,
+    #participant-banner,
+    .no-print {
+        display: none !important;
+    }
+
+    main {
+        max-width: none !important;
+        padding: 0 !important;
+    }
+
+    .tab-content {
+        display: block !important;
+        width: 100% !important;
+        border: 0 !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 0 18px !important;
+        page-break-inside: avoid;
+    }
+
+    .tab-content.hidden {
+        display: none !important;
+    }
+}
+</style>
+
+
+<style id="clinical-platform-layout-fix-v8">
+/* v8: eliminate session-to-session horizontal movement caused by
+   the vertical scrollbar appearing/disappearing between views. */
+html {
+    overflow-y: scroll !important;
+    scrollbar-gutter: stable !important;
+}
+
+body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip !important;
+    overflow-y: visible !important;
+    margin: 0 !important;
+}
+
+/* Keep the application's main content column mathematically centered
+   regardless of which session is currently visible. */
+main {
+    width: 100% !important;
+    max-width: 1280px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    padding-left: clamp(16px, 3vw, 40px) !important;
+    padding-right: clamp(16px, 3vw, 40px) !important;
+}
+
+/* Prevent hidden/visible panels from affecting the document's width. */
+.tab-content {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    min-width: 0 !important;
+}
+
+/* Prevent long labels/question text from creating a wider intrinsic grid. */
+.tab-content,
+.tab-content > *,
+.tab-content .grid,
+.tab-content .flex,
+.tab-content section,
+.tab-content article {
+    min-width: 0 !important;
+    max-width: 100% !important;
+}
+
+/* Completion/progress bars: the fill can never exceed the track. */
+.progress-track,
+.completion-track,
+.progress-container,
+[class*="progress"] {
+    box-sizing: border-box !important;
+    max-width: 100% !important;
+}
+
+.progress-track,
+.completion-track,
+.progress-container {
+    overflow: hidden !important;
+}
+
+.progress-track > *,
+.completion-track > *,
+.progress-container > * {
+    box-sizing: border-box !important;
+    max-width: 100% !important;
+}
+
+/* Generic native progress element protection. */
+progress {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+}
+
+/* If the completion percentage is implemented as a width percentage,
+   clamp it visually to the track. */
+[style*="width: 100%"],
+[style*="width:100%"] {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+@media (max-width: 767px) {
+    main {
+        width: 100% !important;
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+    }
+}
+</style>
+
+
+<style id="clinical-platform-ndi-progress-fix-v9">
+/* v9: NDI completion indicator — keep the track centered and the fill
+   fully inside its border. */
+.ndi-progress,
+.ndi-progress-container,
+.ndi-completion,
+.ndi-completion-bar,
+#ndi-progress,
+#ndi-completion {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    box-sizing: border-box !important;
+}
+
+.ndi-progress,
+.ndi-progress-container,
+.ndi-completion,
+.ndi-completion-bar,
+#ndi-progress,
+#ndi-completion {
+    overflow: hidden !important;
+}
+
+.ndi-progress > *,
+.ndi-progress-container > *,
+.ndi-completion > *,
+.ndi-completion-bar > *,
+#ndi-progress > *,
+#ndi-completion > * {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* Common Tailwind-style progress structures used by the NDI session. */
+#ndi-progress .absolute,
+#ndi-progress [style*="width"],
+#ndi-completion .absolute,
+#ndi-completion [style*="width"],
+.ndi-progress .absolute,
+.ndi-progress [style*="width"],
+.ndi-completion-bar .absolute,
+.ndi-completion-bar [style*="width"] {
+    left: 0 !important;
+    right: auto !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* If the track itself is a flex item, make its geometry deterministic. */
+#ndi-progress,
+#ndi-completion,
+.ndi-progress,
+.ndi-completion-bar {
+    flex: 1 1 auto !important;
+    align-self: center !important;
+}
+</style>
+
+
+<style id="clinical-platform-v10-refinement">
+/* =========================================================
+   v10 — NDI progress geometry + consistent question-count badges
+   ========================================================= */
+
+/* NDI completion area: center the entire component rather than the fill. */
+#ndi-progress,
+.ndi-progress,
+.ndi-progress-container,
+.ndi-completion,
+.ndi-completion-bar {
+    position: relative !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: 760px !important;
+    margin-inline: auto !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+}
+
+/* Any immediate progress track inside the NDI completion component. */
+#ndi-progress > div,
+.ndi-progress > div,
+.ndi-progress-container > div,
+.ndi-completion > div,
+.ndi-completion-bar > div {
+    box-sizing: border-box !important;
+}
+
+/* Percentage fill: never inherit a negative translate/margin that can
+   visually pull the fill outside the track. */
+#ndi-progress [style*="width"],
+.ndi-progress [style*="width"],
+.ndi-progress-container [style*="width"],
+.ndi-completion [style*="width"],
+.ndi-completion-bar [style*="width"] {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    transform: none !important;
+    box-sizing: border-box !important;
+    max-width: 100% !important;
+}
+
+/* Question-count circles/badges:
+   use one neutral style everywhere, including the SF-12 "12 題" badge. */
+.tab-content .question-count-badge,
+.tab-content .question-number-badge,
+.tab-content .subquestion-count-badge,
+.tab-content [data-question-count],
+.tab-content [data-count-badge] {
+    background: #f1f5f9 !important;
+    color: #475569 !important;
+    border-color: #cbd5e1 !important;
+    box-shadow: none !important;
+}
+
+/* Explicitly neutralize common green utility classes when used on a
+   question-count circle. */
+.tab-content .question-count-badge.bg-teal-500,
+.tab-content .question-count-badge.bg-teal-600,
+.tab-content .question-count-badge.bg-teal-700,
+.tab-content .question-number-badge.bg-teal-500,
+.tab-content .question-number-badge.bg-teal-600,
+.tab-content .question-number-badge.bg-teal-700,
+.tab-content [data-question-count].bg-teal-500,
+.tab-content [data-question-count].bg-teal-600,
+.tab-content [data-question-count].bg-teal-700 {
+    background: #f1f5f9 !important;
+    color: #475569 !important;
+    border-color: #cbd5e1 !important;
+}
+
+/* Keep the NDI completion component centered at every breakpoint. */
+@media (max-width: 767px) {
+    #ndi-progress,
+    .ndi-progress,
+    .ndi-progress-container,
+    .ndi-completion,
+    .ndi-completion-bar {
+        max-width: 100% !important;
+    }
+}
+</style>
+
+
+<style id="clinical-platform-completion-alignment-v11">
+/* =========================================================
+   v11 — completion panels align exactly with questionnaire cards
+   ========================================================= */
+
+/* The previous -mx / px wrapper intentionally extended the progress
+   panel outside the questionnaire's content column. Remove that
+   behavior globally. */
+.sticky-progress-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    box-sizing: border-box !important;
+}
+
+/* The progress track and fill use the exact same left/right edges
+   as the questionnaire display area. */
+.sticky-progress-wrapper .enhanced-progress-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+}
+
+.sticky-progress-wrapper .enhanced-progress-bar {
+    display: block !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* Remove the old NDI-specific max-width/centering constraint. NDI,
+   DASH, SF-12, TSK and SEE should all have identical horizontal edges. */
+#ndi-progress,
+.ndi-progress,
+.ndi-progress-container,
+.ndi-completion,
+.ndi-completion-bar,
+#ndi-completion {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    box-sizing: border-box !important;
+}
+
+/* Every questionnaire header count badge uses the same neutral gray. */
+.tab-content > .flex > span.bg-teal-50,
+.tab-content > .flex > span.bg-teal-100 {
+    background-color: #f1f5f9 !important;
+    color: #475569 !important;
+    border-color: #cbd5e1 !important;
+    box-shadow: none !important;
+}
+</style>
+
+
+<style id="clinical-platform-see-scale-v14">
+/* SEE 0–10 scale: every value, including 0, is a real clickable label. */
+.see-scale {
+    width: 100%;
+    margin-top: 14px;
+    padding: 14px 12px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    background: #f8fafc;
+    box-sizing: border-box;
+    overflow: visible !important;
+}
+.see-scale-options {
+    display: grid !important;
+    grid-template-columns: repeat(11, minmax(0, 1fr)) !important;
+    gap: 7px;
+    width: 100%;
+    overflow: visible !important;
+}
+.see-scale-option {
+    position: relative;
+    min-width: 0 !important;
+    min-height: 50px;
+    width: 100%;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    border: 2px solid #cbd5e1;
+    border-radius: 10px;
+    background: #fff;
+    color: #334155;
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: border-color .18s ease, background-color .18s ease, box-shadow .18s ease, color .18s ease;
+}
+.see-scale-option input[type="radio"] {
+    position: absolute !important;
+    opacity: 0 !important;
+    width: 1px !important;
+    height: 1px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    pointer-events: none !important;
+}
+.see-scale-option:hover {
+    border-color: #14b8a6;
+    background: #f0fdfa;
+}
+.see-scale-option:focus-within {
+    outline: 3px solid rgba(20,184,166,.24);
+    outline-offset: 2px;
+}
+.see-scale-option input[type="radio"]:checked + span {
+    color: #0f766e !important;
+}
+.see-scale-option:has(input[type="radio"]:checked) {
+    background: rgba(20,184,166,.16) !important;
+    border-color: #14b8a6 !important;
+    box-shadow: inset 0 0 0 1px rgba(20,184,166,.18) !important;
+}
+.see-scale-option > span {
+    display: block;
+    pointer-events: none;
+    line-height: 1;
+}
+@media (max-width: 900px) {
+    .see-scale-options { gap: 5px; }
+    .see-scale-option { min-height: 44px; }
+}
+@media (max-width: 600px) {
+    .see-scale { padding: 12px 9px 10px; }
+    .see-scale-options {
+        grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+        gap: 6px;
+    }
+    .see-scale-option { min-height: 42px; }
+}
+
+
+</style>
+
+
+<style id="clinical-platform-question-selection-v16">
+/* Persistent selected-answer appearance for NDI, DASH, SF-12 and TSK. */
+.ndi-item label:has(input[type="radio"]:checked),
+.dash-item label:has(input[type="radio"]:checked),
+.sf12-item label:has(input[type="radio"]:checked),
+.tsk-item label:has(input[type="radio"]:checked) {
+    background-color: rgba(20, 184, 166, 0.16) !important;
+    border-color: #14b8a6 !important;
+    color: #0f766e !important;
+    box-shadow: inset 0 0 0 1px rgba(20, 184, 166, 0.18) !important;
+}
+.ndi-item label:has(input[type="radio"]:checked) span,
+.dash-item label:has(input[type="radio"]:checked) span,
+.sf12-item label:has(input[type="radio"]:checked) span,
+.tsk-item label:has(input[type="radio"]:checked) span {
+    color: #0f766e !important;
+}
+/* Keep the selected DASH answer number white for contrast. */
+.dash-item label:has(input[type="radio"]:checked) > span:first-of-type {
+    color: #fff !important;
+}
+</style>
+
+<style id="clinical-platform-delete-confirm-v17">
+#delete-confirm-modal {
+    z-index: 100 !important;
+}
+#delete-confirm-modal .delete-confirm-card {
+    animation: deleteModalIn .18s ease-out;
+}
+@keyframes deleteModalIn {
+    from { opacity: 0; transform: translateY(8px) scale(.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+</style>
+
+<style id="clinical-platform-clear-all-confirm-v18">
+#clear-all-confirm-modal { z-index: 110 !important; }
+#clear-all-confirm-modal .clear-all-confirm-card { animation: deleteModalIn .18s ease-out; }
+</style>
+
+<style id="clinical-platform-completion-sticky-final">
+/* Prevent the questionnaire tab animation from creating a transformed ancestor. */
+.tab-content:not(.hidden) {
+    animation: none !important;
+    transform: none !important;
+}
+</style>
+
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased font-size-normal">
+
+    <header class="bg-slate-900 text-white shadow-md sticky top-0 z-40 no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-teal-600 text-white p-2 rounded-lg font-bold text-xl flex items-center justify-center w-10 h-10 shadow-sm">
+                    <i class="fa-solid fa-notes-medical"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight text-slate-100">臨床評估問卷平台</h1>
+                    <p class="text-xs text-teal-200/80">NDI &bull; DASH &bull; SF-12 &bull; TSK &bull; SEE Scale</p>
+                </div>
+            </div>
+
+            <!-- Mode Switcher, Font Size Controls & Status -->
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                <!-- Font Size Switcher Dropdown / Buttons -->
+                <div class="bg-slate-800 border border-slate-700 rounded-lg p-1 flex items-center gap-1 text-xs text-slate-200">
+                    <span class="px-1.5 text-slate-400 hidden sm:inline-block"><i class="fa-solid fa-text-height"></i> 字體:</span>
+                    <button type="button" onclick="changeFontSize('normal')" id="fs-normal-btn" class="px-2.5 py-1 rounded bg-teal-700 text-white font-semibold transition" title="標準字體">標準</button>
+                    <button type="button" onclick="changeFontSize('large')" id="fs-large-btn" class="px-2.5 py-1 rounded hover:bg-slate-700 transition" title="放大字體">大</button>
+                    <button type="button" onclick="changeFontSize('xlarge')" id="fs-xlarge-btn" class="px-2.5 py-1 rounded hover:bg-slate-700 transition" title="特大字體">特大</button>
+                </div>
+
+                <div id="mode-badge" class="hidden sm:flex px-3 py-1 rounded-full text-xs font-semibold bg-teal-900/60 text-teal-200 border border-teal-700/50 items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-teal-400 animate-pulse"></span>
+                    <span id="mode-label">參加者模式</span>
+                </div>
+                
+                <button id="toggle-assessor-btn" onclick="openAssessorModal()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-lg border border-slate-700 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-user-gear"></i>
+                    <span>評估員</span>
+                </button>
+
+                <button id="logout-assessor-btn" onclick="logoutAssessor()" class="hidden px-3 py-1.5 bg-rose-900/40 hover:bg-rose-900/60 text-rose-200 text-xs font-medium rounded-lg border border-rose-700 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-lock"></i>
+                    <span>鎖定</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow w-full">
+        
+        <!-- Mode Alert Messages -->
+        <div id="assessor-banner" class="hidden mb-4 p-3.5 bg-teal-50 border border-teal-200/80 rounded-xl text-teal-900 text-xs sm:text-sm flex items-center justify-between no-print shadow-2xs">
+            <div class="flex items-center gap-2.5">
+                <i class="fa-solid fa-shield-halved text-teal-600 text-lg"></i>
+                <span><strong>評估員模式已啟用：</strong> 您可以自由點擊任何標籤跳轉至不同問卷、檢視總結報告與歷史紀錄。</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="openChangeAssessorPasswordModal()" class="bg-white hover:bg-teal-50 text-teal-800 px-3 py-1.5 rounded-lg font-semibold text-xs border border-teal-200 transition flex items-center gap-1">
+                    <i class="fa-solid fa-key"></i> 更改密碼
+                </button>
+                <button onclick="switchTab('history')" class="bg-teal-700 hover:bg-teal-800 text-white px-3 py-1.5 rounded-lg font-medium text-xs shadow-xs transition flex items-center gap-1">
+                    <i class="fa-solid fa-database"></i> 已存紀錄
+                </button>
+            </div>
+        </div>
+
+        <div id="participant-banner" class="mb-4 p-3.5 bg-slate-100/90 border border-slate-200 rounded-xl text-slate-700 text-xs sm:text-sm flex items-center gap-2.5 no-print">
+            <i class="fa-solid fa-circle-info text-teal-600 text-base"></i>
+            <span><strong>參加者填寫模式：</strong> 請按順序完成各頁面問題，系統會引導您完成所有量表。</span>
+        </div>
+
+        <!-- Navigation Tabs / Wizard Stepper -->
+        <nav class="bg-white rounded-xl shadow-xs border border-slate-200 p-2 mb-6 no-print overflow-x-auto">
+            <div class="flex flex-nowrap sm:flex-wrap gap-1 text-xs md:text-sm font-medium min-w-max sm:min-w-0">
+                <button id="tab-btn-0" onclick="handleTabClick(0)" class="flex-1 py-2.5 px-3 rounded-lg text-center transition flex items-center justify-center gap-1.5 bg-teal-700 text-white font-semibold shadow-xs">
+                    <span class="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-xs">1</span>
+                    <span>基本資料</span>
+                </button>
+                <button id="tab-btn-1" onclick="handleTabClick(1)" class="flex-1 py-2.5 px-3 rounded-lg text-center transition flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-100">
+                    <span class="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-xs text-slate-700">2</span>
+                    <span>NDI</span>
+                </button>
+                <button id="tab-btn-2" onclick="handleTabClick(2)" class="flex-1 py-2.5 px-3 rounded-lg text-center transition flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-100">
+                    <span class="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-xs text-slate-700">3</span>
+                    <span>DASH</span>
+                </button>
+                <button id="tab-btn-3" onclick="handleTabClick(3)" class="flex-1 py-2.5 px-3 rounded-lg text-center transition flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-100">
+                    <span class="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-xs text-slate-700">4</span>
+                    <span>SF-12</span>
+                </button>
+                <button id="tab-btn-4" onclick="handleTabClick(4)" class="flex-1 py-2.5 px-3 rounded-lg text-center transition flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-100">
+                    <span class="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-xs text-slate-700">5</span>
+                    <span>TSK</span>
+                </button>
+                <button id="tab-btn-5" onclick="handleTabClick(5)" class="flex-1 py-2.5 px-3 rounded-lg text-center transition flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-100">
+                    <span class="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-xs text-slate-700">6</span>
+                    <span>SEE Scale</span>
+                </button>
+                <button id="tab-btn-6" onclick="handleTabClick(6)" class="hidden flex-1 py-2.5 px-3 rounded-lg text-center transition flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-100">
+                    <span class="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-xs text-slate-700">7</span>
+                    <span>總結報告</span>
+                </button>
+                <button id="tab-btn-history" onclick="switchTab('history')" class="hidden flex-1 py-2.5 px-3 rounded-lg text-center transition flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-100 border-l border-slate-200">
+                    <i class="fa-solid fa-folder-open text-teal-600"></i>
+                    <span>歷史紀錄</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Step 0: Participant Information -->
+        <div id="step-0" class="tab-content bg-white rounded-xl border border-slate-200 shadow-xs p-responsive mb-6 transition-all duration-200">
+            <h2 class="text-lg font-bold text-slate-900 border-b pb-3 mb-5 flex items-center gap-2">
+                <i class="fa-solid fa-id-card text-teal-600"></i>
+                參加者基本資料
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">1. 姓名 <span class="text-rose-500">*</span></label>
+                    <input type="text" id="participant-name" placeholder="例如：Chan Tai Man" class="w-full border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">2. 編號 <span class="text-rose-500">*</span></label>
+                    <input type="text" id="participant-id" placeholder="例如：D1 / H2 / U3" class="w-full border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">3. 評估日期 <span class="text-rose-500">*</span></label>
+                    <input type="date" id="assessment-date" class="w-full border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">4. 評估時間點 <span class="text-rose-500">*</span></label>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-1">
+                        <button type="button" onclick="selectTimepoint('Pre-exercise')" id="tp-btn-pre" class="tp-option-btn border-2 border-slate-200 bg-white rounded-lg p-3 text-xs font-medium text-slate-700 transition text-center">
+                            運動前
+                        </button>
+                        <button type="button" onclick="selectTimepoint('Post-5-weeks-exercise')" id="tp-btn-post" class="tp-option-btn border-2 border-slate-200 bg-white rounded-lg p-3 text-xs font-medium text-slate-700 transition text-center">
+                            五星期運動後
+                        </button>
+                        <button type="button" onclick="selectTimepoint('6-Months-after')" id="tp-btn-followup" class="tp-option-btn border-2 border-slate-200 bg-white rounded-lg p-3 text-xs font-medium text-slate-700 transition text-center">
+                            六個月後
+                        </button>
+                    </div>
+                    <input type="hidden" id="assessment-timepoint" value="">
+                </div>
+            </div>
+
+            <div class="mt-8 flex justify-end">
+                <button onclick="handleNextStep(0)" class="bg-teal-700 hover:bg-teal-800 text-white font-medium px-6 py-3 rounded-lg text-sm shadow-xs transition flex items-center gap-2">
+                    <span>前往 NDI 問卷</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 1: Neck Disability Index (NDI) -->
+        <div id="step-1" class="tab-content hidden bg-white rounded-xl border border-slate-200 shadow-xs p-responsive mb-6">
+            <div class="flex justify-between items-start border-b pb-4 mb-3">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-bone text-teal-600"></i>
+                        頸椎功能障礙指數 (NDI)
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-1">請針對每個項目，選擇一個最符合您「今天」狀況的描述。</p>
+                </div>
+                <span class="text-xs bg-slate-100 text-slate-600 px-3 py-1 rounded-full border border-slate-200 font-medium">10 題</span>
+            </div>
+            
+            <div class="sticky-progress-wrapper">
+                <div class="bg-slate-50 p-4 rounded-xl border border-teal-200 shadow-sm">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs sm:text-sm font-extrabold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-chart-pie text-teal-600 text-base"></i>填寫進度即時預覽 (NDI)
+                        </span>
+                        <span id="ndi-progress-text" class="text-xs sm:text-sm font-black text-teal-800 bg-teal-100 px-3 py-1 rounded-full border border-teal-300">0% 完成 (0/10 題)</span>
+                    </div>
+                    <div class="enhanced-progress-container h-5 sm:h-6 w-full">
+                        <div id="ndi-progress-bar" class="enhanced-progress-bar h-full w-0 shadow-sm"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="ndi-questions-container" class="space-y-5"></div>
+
+            <div class="mt-8 flex justify-between items-center pt-4 border-t border-slate-100">
+                <button onclick="switchTab(0)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-5 py-2.5 rounded-lg text-sm transition flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-left"></i> 上一步
+                </button>
+                <button onclick="handleNextStep(1)" class="bg-teal-700 hover:bg-teal-800 text-white font-medium px-6 py-2.5 rounded-lg text-sm shadow-xs transition flex items-center gap-2">
+                    <span>前往 DASH 問卷</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 2: DASH -->
+        <div id="step-2" class="tab-content hidden bg-white rounded-xl border border-slate-200 shadow-xs p-6 mb-6">
+            <div class="flex justify-between items-start border-b pb-4 mb-3">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-hand-holding-medical text-teal-600"></i>
+                        上肢功能受損程度問卷 (DASH)
+                    </h2>
+                    <p class="text-xs text-slate-600 mt-2 leading-relaxed">
+                        本問卷的內容會問及有關你的病癥，以及你進行某些活動的能力。<br>
+                        請根據你過去一星期內的情況，就下列每一條問題，選取最適合的數字作答。<br>
+                        如果你過去一星期內，沒有機會進行該項活動，請估計你進行該項活動的能力，並選取最適合的答案。<br>
+                        你只需要考慮你進行該項活動的能力去選取答案，而不必理會你是用那一隻手或手臂去進行。
+                    </p>
+                </div>
+                <span class="text-xs bg-slate-100 text-slate-600 px-3 py-1 rounded-full border border-slate-200 font-medium shrink-0 ml-2">30 題</span>
+            </div>
+            
+            <div class="sticky-progress-wrapper">
+                <div class="bg-slate-50 p-4 rounded-xl border border-teal-200 shadow-sm">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs sm:text-sm font-extrabold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-chart-pie text-teal-600 text-base"></i>填寫進度即時預覽 (DASH)
+                        </span>
+                        <span id="dash-progress-text" class="text-xs sm:text-sm font-black text-teal-800 bg-teal-100 px-3 py-1 rounded-full border border-teal-300">0% 完成 (0/30 題)</span>
+                    </div>
+                    <div class="enhanced-progress-container h-5 sm:h-6 w-full">
+                        <div id="dash-progress-bar" class="enhanced-progress-bar h-full w-0 shadow-sm"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="dash-questions-container" class="space-y-6"></div>
+
+            <div class="mt-8 flex justify-between items-center pt-4 border-t border-slate-100">
+                <button onclick="switchTab(1)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-5 py-2.5 rounded-lg text-sm transition flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-left"></i> 上一步
+                </button>
+                <button onclick="handleNextStep(2)" class="bg-teal-700 hover:bg-teal-800 text-white font-medium px-6 py-2.5 rounded-lg text-sm shadow-xs transition flex items-center gap-2">
+                    <span>前往 SF-12 問卷</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 3: SF-12 -->
+        <div id="step-3" class="tab-content hidden bg-white rounded-xl border border-slate-200 shadow-xs p-6 mb-6">
+            <div class="flex justify-between items-start border-b pb-4 mb-3">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-heart-pulse text-teal-600"></i>
+                        簡明12項健康狀況調查問卷 (SF-12)
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-1">敬請回答下列各問題（問題 1 至 7），並選取最適當的答案。</p>
+                </div>
+                <span class="text-xs bg-slate-100 text-slate-600 px-3 py-1 rounded-full border border-slate-200 font-medium">12 題</span>
+            </div>
+            
+            <div class="sticky-progress-wrapper">
+                <div class="bg-slate-50 p-4 rounded-xl border border-teal-200 shadow-sm">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs sm:text-sm font-extrabold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-chart-pie text-teal-600 text-base"></i>填寫進度即時預覽 (SF-12)
+                        </span>
+                        <span id="sf12-progress-text" class="text-xs sm:text-sm font-black text-teal-800 bg-teal-100 px-3 py-1 rounded-full border border-teal-300">0% 完成 (0/12 題)</span>
+                    </div>
+                    <div class="enhanced-progress-container h-5 sm:h-6 w-full">
+                        <div id="sf12-progress-bar" class="enhanced-progress-bar h-full w-0 shadow-sm"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="sf12-questions-container" class="space-y-6"></div>
+
+            <div class="mt-8 flex justify-between items-center pt-4 border-t border-slate-100">
+                <button onclick="switchTab(2)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-5 py-2.5 rounded-lg text-sm transition flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-left"></i> 上一步
+                </button>
+                <button onclick="handleNextStep(3)" class="bg-teal-700 hover:bg-teal-800 text-white font-medium px-6 py-2.5 rounded-lg text-sm shadow-xs transition flex items-center gap-2">
+                    <span>前往 TSK 問卷</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 4: Tampa Scale for Kinesiophobia (TSK) -->
+        <div id="step-4" class="tab-content hidden bg-white rounded-xl border border-slate-200 shadow-xs p-6 mb-6">
+            <div class="flex justify-between items-start border-b pb-4 mb-3">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-brain text-teal-600"></i>
+                        坦帕運動恐懼症量表 (TSK)
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-1">以下問題是關於您的肩頸痛與您平時活動的關係，請根據您的實際情況選擇您認為最合適的答案。</p>
+                </div>
+                <span class="text-xs bg-slate-100 text-slate-600 px-3 py-1 rounded-full border border-slate-200 font-medium">17 題</span>
+            </div>
+            
+            <div class="sticky-progress-wrapper">
+                <div class="bg-slate-50 p-4 rounded-xl border border-teal-200 shadow-sm">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs sm:text-sm font-extrabold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-chart-pie text-teal-600 text-base"></i>填寫進度即時預覽 (TSK)
+                        </span>
+                        <span id="tsk-progress-text" class="text-xs sm:text-sm font-black text-teal-800 bg-teal-100 px-3 py-1 rounded-full border border-teal-300">0% 完成 (0/17 題)</span>
+                    </div>
+                    <div class="enhanced-progress-container h-5 sm:h-6 w-full">
+                        <div id="tsk-progress-bar" class="enhanced-progress-bar h-full w-0 shadow-sm"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tsk-questions-container" class="space-y-6"></div>
+
+            <div class="mt-8 flex justify-between items-center pt-4 border-t border-slate-100">
+                <button onclick="switchTab(3)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-5 py-2.5 rounded-lg text-sm transition flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-left"></i> 上一步
+                </button>
+                <button onclick="handleNextStep(4)" class="bg-teal-700 hover:bg-teal-800 text-white font-medium px-6 py-2.5 rounded-lg text-sm shadow-xs transition flex items-center gap-2">
+                    <span>前往 SEE Scale 問卷</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 5: Self-Efficacy for Exercise Scale (SEE) -->
+        <div id="step-5" class="tab-content hidden bg-white rounded-xl border border-slate-200 shadow-xs p-6 mb-6">
+            <div class="flex justify-between items-start border-b pb-4 mb-3">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-person-running text-teal-600"></i>
+                        運動自我效能量表 (SEE Scale)
+                    </h2>
+                    <p class="text-sm text-slate-500 mt-1">此部份將瞭解您從事運動的信心程度。</p>
+                </div>
+                <span class="text-xs bg-slate-100 text-slate-600 px-3 py-1 rounded-full border border-slate-200 font-medium">9 題</span>
+            </div>
+            
+            <div class="sticky-progress-wrapper">
+                <div class="bg-slate-50 p-4 rounded-xl border border-teal-200 shadow-sm">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs sm:text-sm font-extrabold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-chart-pie text-teal-600 text-base"></i>填寫進度即時預覽 (SEE)
+                        </span>
+                        <span id="see-progress-text" class="text-xs sm:text-sm font-black text-teal-800 bg-teal-100 px-3 py-1 rounded-full border border-teal-300">0% 完成 (0/9 題)</span>
+                    </div>
+                    <div class="enhanced-progress-container h-5 sm:h-6 w-full">
+                        <div id="see-progress-bar" class="enhanced-progress-bar h-full w-0 shadow-sm"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="see-questions-container" class="space-y-6"></div>
+
+            <div class="mt-8 flex justify-between items-center pt-4 border-t border-slate-100">
+                <button onclick="switchTab(4)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-5 py-2.5 rounded-lg text-sm transition flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-left"></i> 上一步
+                </button>
+                <button onclick="handleNextStep(5)" class="bg-teal-700 hover:bg-teal-800 text-white font-medium px-6 py-2.5 rounded-lg text-sm shadow-xs transition flex items-center gap-2">
+                    <span>完成問卷</span>
+                    <i class="fa-solid fa-circle-check"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 5.5: Thank You Completion Screen for Participant -->
+        <div id="step-completion" class="tab-content hidden bg-white rounded-xl border border-slate-200 shadow-xs p-8 text-center mb-6">
+            <div class="max-w-md mx-auto py-8">
+                <div class="w-20 h-20 bg-teal-100 text-teal-700 rounded-full flex items-center justify-center text-3xl mx-auto mb-6 shadow-sm">
+                    <i class="fa-solid fa-heart-circle-check"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-slate-900 mb-3">Thank you for your participation!</h2>
+                <p class="text-sm text-slate-600 mb-8 leading-relaxed">
+                    感謝您撥冗填寫所有的臨床評估問卷。您的回覆對我們的研究與健康評估非常重要。
+                </p>
+                <button onclick="switchTab(0)" class="bg-slate-800 hover:bg-slate-900 text-white font-medium px-6 py-3 rounded-lg text-sm transition shadow-xs">
+                    返回首頁 / 新增填寫
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 6: Summary View (Assessor Only) -->
+        <div id="step-6" class="tab-content hidden bg-white rounded-xl border border-slate-200 shadow-xs p-6 mb-6">
+            <div class="flex flex-col sm:flex-row justify-between sm:items-center border-b pb-4 mb-6 gap-3">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-file-contract text-teal-600"></i>
+                        臨床評估問卷總結報告
+                    </h2>
+                    <p class="text-xs text-slate-500">所有臨床評估問卷之綜合得分與分析</p>
+                </div>
+                <div class="flex items-center gap-2 no-print">
+                    <button onclick="saveCurrentAssessment()" class="bg-teal-700 hover:bg-teal-800 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-xs transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-floppy-disk"></i> 儲存評估紀錄
+                    </button>
+                    <button onclick="window.print()" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-xs transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-print"></i> 列印報告
+                    </button>
+                </div>
+            </div>
+
+            <!-- Participant Demographics Summary Header -->
+            <div class="bg-slate-50 rounded-xl border border-slate-200 p-4 mb-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-xs sm:text-sm">
+                <div>
+                    <span class="block text-xs font-medium text-slate-500 uppercase tracking-wider">姓名</span>
+                    <span class="font-bold text-slate-900" id="summary-patient-name">-</span>
+                </div>
+                <div>
+                    <span class="block text-xs font-medium text-slate-500 uppercase tracking-wider">編號</span>
+                    <span class="font-bold text-slate-900" id="summary-patient-id">-</span>
+                </div>
+                <div>
+                    <span class="block text-xs font-medium text-slate-500 uppercase tracking-wider">評估日期</span>
+                    <span class="font-bold text-slate-900" id="summary-date">-</span>
+                </div>
+                <div>
+                    <span class="block text-xs font-medium text-slate-500 uppercase tracking-wider">評估時間點</span>
+                    <span class="font-bold text-teal-700" id="summary-timepoint">-</span>
+                </div>
+            </div>
+
+            <!-- Calculated Score Outcome Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
+                <!-- NDI Card -->
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-5 relative">
+                    <div class="flex justify-between items-start mb-3">
+                        <h3 class="font-bold text-slate-800 text-sm">頸椎功能障礙指數 (NDI)</h3>
+                        <span class="text-xs bg-teal-50 text-teal-800 px-2.5 py-0.5 rounded-full border border-teal-200 font-medium">頸椎功能</span>
+                    </div>
+                    <div class="text-3xl font-extrabold text-teal-700 mb-1" id="summary-ndi-score">0.0%</div>
+                    <div class="text-xs text-slate-500 mb-3" id="summary-ndi-raw">(0 / 0 分；未填寫駕駛題時不計入分母)</div>
+                    <div class="border-t border-slate-200 pt-3">
+                        <div class="text-xs font-medium text-slate-500 uppercase tracking-wider">失能嚴重度：</div>
+                        <div class="text-xs font-bold text-slate-800 mt-0.5" id="summary-ndi-severity">無失能</div>
+                    </div>
+                </div>
+
+                <!-- DASH Card -->
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-5 relative">
+                    <div class="flex justify-between items-start mb-3">
+                        <h3 class="font-bold text-slate-800 text-sm">上肢功能受損程度問卷 (DASH)</h3>
+                        <span class="text-xs bg-teal-50 text-teal-800 px-2.5 py-0.5 rounded-full border border-teal-200 font-medium">上肢功能</span>
+                    </div>
+                    <div class="text-3xl font-extrabold text-teal-700 mb-1" id="summary-dash-score">0.0</div>
+                    <div class="text-xs text-slate-500 mb-3">範圍：0（無失能）至 100（極嚴重）</div>
+                    <div class="border-t border-slate-200 pt-3">
+                        <div class="text-xs font-medium text-slate-500 uppercase tracking-wider">功能受損程度：</div>
+                        <div class="text-xs font-bold text-slate-800 mt-0.5" id="summary-dash-severity">極小困難 / 正常</div>
+                    </div>
+                </div>
+
+                <!-- SF-12 Card -->
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-5 relative">
+                    <div class="flex justify-between items-start mb-3">
+                        <h3 class="font-bold text-slate-800 text-sm">簡明12項健康狀況調查問卷 (SF-12)</h3>
+                        <span class="text-xs bg-teal-50 text-teal-800 px-2.5 py-0.5 rounded-full border border-teal-200 font-medium">生活品質</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 my-2">
+                        <div>
+                            <div class="text-xs text-slate-500 font-medium">PCS (生理健康)</div>
+                            <div class="text-2xl font-bold text-teal-700" id="summary-sf12-pcs">0.0</div>
+                        </div>
+                        <div>
+                            <div class="text-xs text-slate-500 font-medium">MCS (心理健康)</div>
+                            <div class="text-2xl font-bold text-teal-700" id="summary-sf12-mcs">0.0</div>
+                        </div>
+                    </div>
+                    <div class="border-t border-slate-200 pt-2 text-xs text-slate-500">
+                        常模標準平均值：50 &plusmn; 10
+                    </div>
+                </div>
+
+                <!-- TSK Card -->
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-5 relative">
+                    <div class="flex justify-between items-start mb-3">
+                        <h3 class="font-bold text-slate-800 text-sm">坦帕運動恐懼症量表 (TSK)</h3>
+                        <span class="text-xs bg-teal-50 text-teal-800 px-2.5 py-0.5 rounded-full border border-teal-200 font-medium">運動恐懼症</span>
+                    </div>
+                    <div class="text-3xl font-extrabold text-teal-700 mb-1" id="summary-tsk-score">0 / 68</div>
+                    <div class="text-xs text-slate-500 mb-3">範圍：17 至 68 (臨界值 &gt; 37)</div>
+                    <div class="border-t border-slate-200 pt-3">
+                        <div class="text-xs font-medium text-slate-500 uppercase tracking-wider">恐懼程度：</div>
+                        <div class="text-xs font-bold text-slate-800 mt-0.5" id="summary-tsk-severity">低至中度恐懼</div>
+                    </div>
+                </div>
+
+                <!-- SEE Card -->
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-5 relative">
+                    <div class="flex justify-between items-start mb-3">
+                        <h3 class="font-bold text-slate-800 text-sm">運動自我效能量表 (SEE Scale)</h3>
+                        <span class="text-xs bg-teal-50 text-teal-800 px-2.5 py-0.5 rounded-full border border-teal-200 font-medium">運動信心</span>
+                    </div>
+                    <div class="text-3xl font-extrabold text-teal-700 mb-1" id="summary-see-score">0.0 / 10</div>
+                    <div class="text-xs text-slate-500 mb-3" id="summary-see-raw">(原始總分: 0 / 90)</div>
+                    <div class="border-t border-slate-200 pt-3">
+                        <div class="text-xs font-medium text-slate-500 uppercase tracking-wider">信心程度：</div>
+                        <div class="text-xs font-bold text-slate-800 mt-0.5" id="summary-see-severity">低自我效能</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Full Item Response Breakdown Toggle -->
+            <div class="bg-slate-50 rounded-xl border border-slate-200 p-4 mb-6">
+                <div class="flex justify-between items-center cursor-pointer" onclick="toggleElement('item-breakdown-details')">
+                    <h3 class="text-xs font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-teal-600"></i>
+                        完整單項答題細節 breakdown (所有問卷)
+                    </h3>
+                    <span class="text-xs text-teal-700 font-medium hover:underline flex items-center gap-1">
+                        <span>展開 / 摺疊各項回答</span>
+                        <i class="fa-solid fa-chevron-down text-xs"></i>
+                    </span>
+                </div>
+                <div id="item-breakdown-details" class="mt-4 hidden space-y-6">
+                    <div id="breakdown-ndi-container"></div>
+                    <div id="breakdown-dash-container"></div>
+                    <div id="breakdown-sf12-container"></div>
+                    <div id="breakdown-tsk-container"></div>
+                    <div id="breakdown-see-container"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step History: Saved Assessment Records -->
+        <div id="step-history" class="tab-content hidden bg-white rounded-xl border border-slate-200 shadow-xs p-6 mb-6">
+            <div class="flex flex-col sm:flex-row justify-between sm:items-center border-b pb-4 mb-6 gap-3">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-database text-teal-600"></i>
+                        過往問卷紀錄
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-0.5">檢視已保存之個案資料，支援完整原始數據 Excel 匯出。</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button onclick="exportAllExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-xs transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-file-excel"></i> 匯出 Excel
+                    </button>
+                    <button onclick="clearAllRecords()" class="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 px-3 py-2 rounded-lg text-xs font-semibold transition">
+                        清除全部
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search & Filters -->
+            <div class="mb-4 flex flex-col sm:flex-row gap-3">
+                <input type="text" id="record-search" oninput="renderRecordsTable()" placeholder="搜尋編號或姓名..." class="border border-slate-300 rounded-lg p-2 text-sm flex-1 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                <select id="record-timepoint-filter" onchange="renderRecordsTable()" class="border border-slate-300 rounded-lg p-2 text-sm bg-white focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                    <option value="">全部時間點</option>
+                    <option value="Pre-exercise">運動前</option>
+                    <option value="Post-5-weeks-exercise">五星期運動後</option>
+                    <option value="6-Months-after">六個月後</option>
+                </select>
+            </div>
+
+            <!-- Records Table -->
+            <div class="overflow-x-auto border border-slate-200 rounded-xl">
+                <table class="w-full text-left text-xs sm:text-sm">
+                    <thead class="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200">
+                        <tr>
+                            <th class="p-3">姓名 / 編號</th>
+                            <th class="p-3">評估日期</th>
+                            <th class="p-3">時間點</th>
+                            <th class="p-3">NDI (%)</th>
+                            <th class="p-3">DASH</th>
+                            <th class="p-3">SF-12 (PCS/MCS)</th>
+                            <th class="p-3">TSK</th>
+                            <th class="p-3">SEE</th>
+                            <th class="p-3 text-right">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="records-table-body" class="divide-y divide-slate-200">
+                        <!-- Populated via JS -->
+                    </tbody>
+                </table>
+            </div>
+            <div id="no-records-msg" class="text-center py-12 text-slate-400 text-xs sm:text-sm hidden">
+                目前尚無任何儲存的評估紀錄。
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Assessor Login Modal -->
+    <div id="assessor-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-xl border border-slate-200">
+            <h3 class="text-base font-bold text-slate-900 mb-2 flex items-center gap-2">
+                <i class="fa-solid fa-lock text-teal-600"></i>
+                評估員模式解鎖
+            </h3>
+            <p class="text-xs text-slate-500 mb-4">請輸入評估員解鎖密碼以啟用總結報告與歷史資料庫。</p>
+            <input type="password" id="assessor-password-input" placeholder="輸入解鎖密碼..." class="w-full border border-slate-300 rounded-lg p-2.5 text-sm mb-4 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+            <div class="flex justify-end gap-2">
+                <button onclick="closeAssessorModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium px-4 py-2 rounded-lg transition">
+                    取消
+                </button>
+                <button onclick="verifyAssessorPassword()" class="bg-teal-700 hover:bg-teal-800 text-white text-xs font-semibold px-4 py-2 rounded-lg transition">
+                    確認解鎖
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Change Assessor Password Modal -->
+    <div id="change-assessor-password-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-xl border border-slate-200">
+            <h3 class="text-base font-bold text-slate-900 mb-2 flex items-center gap-2">
+                <i class="fa-solid fa-key text-teal-600"></i>
+                更改評估員密碼
+            </h3>
+            <p class="text-xs text-slate-500 mb-4">
+                不需要輸入舊密碼；請先輸入 Master 密碼，再設定新的評估員密碼。
+            </p>
+
+            <label for="master-password-input" class="block text-xs font-semibold text-slate-700 mb-1.5">Master 密碼</label>
+            <input type="password" id="master-password-input" placeholder="輸入 Master 密碼..."
+                class="w-full border border-slate-300 rounded-lg p-2.5 text-sm mb-3 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+
+            <label for="new-assessor-password-input" class="block text-xs font-semibold text-slate-700 mb-1.5">新評估員密碼</label>
+            <input type="password" id="new-assessor-password-input" placeholder="輸入新的評估員密碼..."
+                class="w-full border border-slate-300 rounded-lg p-2.5 text-sm mb-3 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+
+            <label for="confirm-assessor-password-input" class="block text-xs font-semibold text-slate-700 mb-1.5">確認新密碼</label>
+            <input type="password" id="confirm-assessor-password-input" placeholder="再次輸入新的評估員密碼..."
+                class="w-full border border-slate-300 rounded-lg p-2.5 text-sm mb-4 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+
+            <div class="flex justify-end gap-2">
+                <button onclick="closeChangeAssessorPasswordModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium px-4 py-2 rounded-lg transition">
+                    取消
+                </button>
+                <button onclick="changeAssessorPassword()" class="bg-teal-700 hover:bg-teal-800 text-white text-xs font-semibold px-4 py-2 rounded-lg transition">
+                    儲存新密碼
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Delete Record Confirmation Modal -->
+    <div id="delete-confirm-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="delete-confirm-title">
+        <div class="delete-confirm-card bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl border border-slate-200">
+            <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+                    <i class="fa-solid fa-trash-can"></i>
+                </div>
+                <div class="min-w-0">
+                    <h3 id="delete-confirm-title" class="text-base font-bold text-slate-900 mb-1">確認刪除問卷紀錄</h3>
+                    <p class="text-xs text-slate-500">您即將刪除以下過往問卷紀錄：</p>
+                </div>
+            </div>
+            <div class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700 space-y-1.5">
+                <div><span class="font-semibold text-slate-500">姓名：</span><span id="delete-confirm-name"></span></div>
+                <div><span class="font-semibold text-slate-500">編號：</span><span id="delete-confirm-id"></span></div>
+                <div><span class="font-semibold text-slate-500">評估時間點：</span><span id="delete-confirm-timepoint"></span></div>
+            </div>
+            <div class="mt-3 flex items-start gap-2 rounded-lg bg-rose-50 border border-rose-100 px-3 py-2.5 text-xs text-rose-700">
+                <i class="fa-solid fa-triangle-exclamation mt-0.5"></i>
+                <span>此動作無法復原。</span>
+            </div>
+            <div class="mt-5 flex justify-end gap-2">
+                <button type="button" id="delete-confirm-cancel" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium px-4 py-2 rounded-lg transition">取消</button>
+                <button type="button" id="delete-confirm-ok" class="bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold px-4 py-2 rounded-lg transition shadow-sm">確認刪除</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Clear All Records Confirmation Modal -->
+    <div id="clear-all-confirm-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="clear-all-confirm-title">
+        <div class="clear-all-confirm-card bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl border border-slate-200">
+            <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+                    <i class="fa-solid fa-trash-can"></i>
+                </div>
+                <div class="min-w-0">
+                    <h3 id="clear-all-confirm-title" class="text-base font-bold text-slate-900 mb-1">確認清除全部問卷紀錄</h3>
+                    <p class="text-xs text-slate-500">您即將刪除所有已儲存的過往問卷紀錄。</p>
+                </div>
+            </div>
+            <div class="mt-4 rounded-xl border border-rose-100 bg-rose-50 p-3 text-xs text-rose-700">
+                <div class="flex items-start gap-2">
+                    <i class="fa-solid fa-triangle-exclamation mt-0.5"></i>
+                    <span>此動作會永久刪除全部紀錄，且無法復原。</span>
+                </div>
+            </div>
+            <div class="mt-5 flex justify-end gap-2">
+                <button type="button" id="clear-all-confirm-cancel" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium px-4 py-2 rounded-lg transition">取消</button>
+                <button type="button" id="clear-all-confirm-ok" class="bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold px-4 py-2 rounded-lg transition shadow-sm">確認清除全部</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Message Toast Box -->
+    <div id="toast-notification" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 text-xs sm:text-sm">
+        <i id="toast-icon" class="fa-solid fa-circle-check text-teal-400 text-lg"></i>
+        <span id="toast-message">操作成功</span>
+    </div>
+
+    <script>
+        const ndiQuestions = [
+            { title: "1. 疼痛強度", options: [
+                "我沒有頸部、肩部疼痛",
+                "我現在有非常輕微的疼痛",
+                "我現在有中度的疼痛",
+                "我現在有較嚴重的疼痛",
+                "我現在有非常嚴重的疼痛",
+                "我疼痛的程度嚴重得難以想像"
+            ]},
+            { title: "2. 個人照顧 (洗漱、穿衣等)", options: [
+                "我能正常自理生活，不引起特殊疼痛",
+                "我能正常自理生活，但會引起特殊疼痛",
+                "自理生活時會疼痛，因此必須緩慢、小心",
+                "生活大部分能自理，但需要幫忙",
+                "生活每天都需要幫忙",
+                "難於洗漱、穿衣，因而需要臥床"
+            ]},
+            { title: "3. 提物", options: [
+                "我可以提重物而不引起特殊疼痛",
+                "我可以提重物，但會引起特殊疼痛",
+                "疼痛使我不能從地上提起重物，但若放在桌上我可以移動它",
+                "疼痛使我不能從地上提起重物，但對於放在桌上的輕、中度重量物體我可以移動它",
+                "我只能提很輕的物體",
+                "我完全不能提任何物體"
+            ]},
+            { title: "4. 閱讀", options: [
+                "我能長時間閱讀而不引起頸部疼痛",
+                "我能長時間閱讀，但會引起輕微頸部疼痛",
+                "我能長時間閱讀，但會引起中度頸部疼痛",
+                "因為頸部疼痛，我不能長時間閱讀",
+                "因為頸部疼痛，我進行閱讀很困難",
+                "因為頸部疼痛，我無法進行閱讀"
+            ]},
+            { title: "5. 頭痛", options: [
+                "我從不頭痛",
+                "我有時有輕微頭痛",
+                "我有時有中度頭痛",
+                "我經常有中度頭痛",
+                "我經常有嚴重頭痛",
+                "我時刻都有頭痛"
+            ]},
+            { title: "6. 集中注意力", options: [
+                "我能很輕易地集中注意力",
+                "我能集中注意力，但有一點點困難",
+                "我能集中注意力，但有中度的困難",
+                "集中注意力對我來說很困難",
+                "集中注意力對我來說非常困難",
+                "我無法集中注意力"
+            ]},
+            { title: "7. 工作", options: [
+                "我想做多少工作都能完成",
+                "我只能完成我日常的工作",
+                "我只能完成日常工作中的大部分",
+                "我不能完成我日常的工作",
+                "我幾乎不能工作",
+                "我根本不能工作"
+            ]},
+            { title: "8. 駕駛 / 開車", options: [
+                "我能長時間開車而不引起頸部疼痛",
+                "我能長時間開車，但會引起輕微頸部疼痛",
+                "我能長時間開車，但會引起中度頸部疼痛",
+                "因為頸部疼痛，我不能長時間開車",
+                "因為頸部疼痛，我開車很困難",
+                "因為頸部疼痛，我無法開車",
+                "不適用 (我不駕駛 / 開車)"
+            ]},
+            { title: "9. 睡眠", options: [
+                "我睡眠沒有問題",
+                "我的睡眠因頸部疼痛受到輕微影響 (失眠小於1小時)",
+                "我的睡眠因頸部疼痛受到輕度影響 (失眠1-2小時)",
+                "我的睡眠因頸部疼痛受到中度影響 (失眠2-3小時)",
+                "我的睡眠因頸部疼痛受到重度影響 (失眠3-5小時)",
+                "我的睡眠因頸部疼痛完全受到影響 (失眠5-7小時)"
+            ]},
+            { title: "10. 娛樂活動", options: [
+                "我能進行日常娛樂而沒有頸部疼痛",
+                "我能進行日常娛樂，但會引起輕微頸部疼痛",
+                "因為頸部疼痛，我只能進行日常娛樂的大部分，而不是全部",
+                "因為頸部疼痛，我只能進行小部分的日常娛樂",
+                "因為頸部疼痛，我的日常娛樂很少",
+                "因為頸部疼痛，我無法進行日常娛樂活動"
+            ]}
+        ];
+
+        const dashQuestions = [
+            { number: 1, section: "第一部份：活動能力", text: "扭開緊或新的瓶蓋", options: ["沒有困難", "少許困難", "中度困難", "非常困難", "不能做到"] },
+            { number: 2, section: "第一部份：活動能力", text: "寫字", options: ["沒有困難", "少許困難", "中度困難", "非常困難", "不能做到"] },
+            { number: 3, section: "第一部份：活動能力", text: "扭動鑰匙", options: ["沒有困難", "少許困難", "中度困難", "非常困難", "不能做到"] },
+            { number: 4, section: "第一部份：活動能力", text: "預備飯餐／煮食", options: ["沒有困難", "少許困難", "中度困難", "非常困難", "不能做到"] },
+            { number: 5, section: "第一部份：活動能力", text: "推開重的門", options: ["沒有困難", "少許困難", "中度困難", "非常困難", "不能做到"] },
+            { number: 6, section: "第一部份：活動能力", text: "將物件擺放在高過頭頂的架上", options: ["沒有困難", "少許困難", "中度困難", "非常困難", "不能做到"] },
+            { number: 7, section: "第一部份：活動能力", text: "做消耗大量體力的家務（例如：抹窗或洗擦地板）", options: ["沒有困難", "少許困難", "中度困難", "非常困難", "不能做到"] },
+            { number: 8, section: "第一部份：活動能力", text: "園藝或種植", options: ["沒有困難", "少許困難", "中度困難", "非常困難", "不能做到", "不適用"] },
+            { number: 9, section: "第一部份：活動能力", text: "整理床舖", options: ["沒有困難", "少許困難", "中度困難", "非常困難", "不能做到"] },
+            { number: 10, section: "第一部份：活動能力", text: "攜帶購物袋或公事包", options: ["沒有困難", "少許困難", "中度困難", "非常困難", "不能做到"] },
+            { number: 11, section: "第一部份：活動能力", text: "攜帶重物（超過10磅）", options: ["沒有困難", "少許困難", "中度困難", "非常困難", "不能做到"] },
+            { number: 12, section: "第一部份：活動能力", text: "更換高過頭頂的燈泡", options: ["沒有困難", "少許困難", "中度困難", "非常困難", "不能做到"] },
+            { number: 13, section: "第一部份：活動能力", text: "清洗或吹乾頭髮", options: ["沒有困難", "少許困難", "中度困難", "非常困難", "不能做到"] },
+            { number: 14, section: "第一部份：活動能力", text: "清洗背部", options: ["沒有困難", "少許困難", "中度困難", "非常困難", "不能做到"] },
+            { number: 15, section: "第一部份：活動能力", text: "穿著過頭衣物", options: ["沒有困難", "少許困難", "中度困難", "非常困難", "不能做到"] },
+            { number: 16, section: "第一部份：活動能力", text: "用刀切食物", options: ["沒有困難", "少許困難", "中度困難", "非常困難", "不能做到"] },
+            { number: 17, section: "第一部份：活動能力", text: "進行一些需要較少體力的餘閒活動（例如：玩紙牌遊戲、編織等）", options: ["沒有困難", "少許困難", "中度困難", "非常困難", "不能做到"] },
+            { number: 18, section: "第一部份：活動能力", text: "進行一些需要上肢發力或承受衝力的餘閒活動（例如：打高爾夫球、打排球、打網球、錘擊等）", options: ["沒有困難", "少許困難", "中度困難", "非常困難", "不能做到", "不適用"] },
+            { number: 19, section: "第一部份：活動能力", text: "進行一些需要手臂自由活動的餘閒活動（例如：玩飛碟、打羽毛球等）", options: ["沒有困難", "少許困難", "中度困難", "非常困難", "不能做到"] },
+            { number: 20, section: "第一部份：活動能力", text: "乘搭交通工具從一處地方到另一處地方", options: ["沒有困難", "少許困難", "中度困難", "非常困難", "不能做到"] },
+            { number: 21, section: "第一部份：活動能力", text: "進行性行為", options: ["沒有困難", "少許困難", "中度困難", "非常困難", "不能做到", "不適用"] },
+            { number: 22, section: "第一部份：活動能力", text: "過去一星期內，因為你肩膊、手臂或手部的問題而影響你和家人、朋友、鄰居或團體的正常社交活動，其程度有多大？", options: ["完全沒有", "少許", "中度", "相當大程度", "極度"] },
+            { number: 23, section: "第一部份：活動能力", text: "過去一星期內，你的工作或其他日常活動，有沒有因你肩膊、手臂或手部的問題而受到限制？", options: ["完全沒有限制", "少許限制", "中度限制", "非常受限制", "不能做到"] },
+
+            { number: 24, section: "第二部份：病癥嚴重程度", text: "肩膊、手臂或手部感到痛楚", options: ["沒有", "輕微", "中度", "嚴重", "極度"] },
+            { number: 25, section: "第二部份：病癥嚴重程度", text: "從事某些特定的活動時，肩膊、手臂或手部感到痛楚", options: ["沒有", "輕微", "中度", "嚴重", "極度"] },
+            { number: 26, section: "第二部份：病癥嚴重程度", text: "肩膊、手臂或手部有被針刺的感覺", options: ["沒有", "輕微", "中度", "嚴重", "極度"] },
+            { number: 27, section: "第二部份：病癥嚴重程度", text: "肩膊、手臂或手部軟弱無力", options: ["沒有", "輕微", "中度", "嚴重", "極度"] },
+            { number: 28, section: "第二部份：病癥嚴重程度", text: "肩膊、手臂或手部僵硬", options: ["沒有", "輕微", "中度", "嚴重", "極度"] },
+            { number: 29, section: "第二部份：病癥嚴重程度", text: "過去一星期內，由於你肩膊、手臂或手部的痛楚而引致睡眠困難，其程度有多大？", options: ["沒有困難", "少許困難", "中度困難", "非常困難", "困難至不能入睡"] },
+            { number: 30, section: "第二部份：病癥嚴重程度", text: "由於肩膊、手臂或手部的問題，我覺得自己的辦事能力、自信心或效率，比較以前為低。", options: ["非常不同意", "不同意", "並非同意或不同意", "同意", "非常同意"] }
+        ];
+
+        const dashOptions = [
+            "1 = 沒有困難",
+            "2 = 少許困難",
+            "3 = 中度困難",
+            "4 = 非常困難",
+            "5 = 不能做到"
+        ];
+
+        // Standardized SF-12 Questions Structure (Numbered Q1 to Q7 with divided sub-items)
+        const sf12Questions = [
+            {
+                id: 'sf12_1',
+                qNum: '1',
+                mainQuestion: '總括來說，您認為您的健康狀況是：',
+                subLabel: null,
+                text: '1. 總括來說，您認為您的健康狀況是：',
+                options: ["極好", "很好", "好", "一般", "差"]
+            },
+            {
+                id: 'sf12_2a',
+                qNum: '2',
+                mainQuestion: '下列問題是關於您日常生活中可能進行的活動。以您目前的健康狀況，您在進行這些活動時，有沒有受到限制？如果有的話，程度如何？',
+                subLabel: 'a',
+                text: '中等強度的活動，比如搬桌子、使用吸塵器清潔地面、玩保齡球或打太極拳',
+                options: ["有很大限制", "有一點限制", "沒有任何限制"]
+            },
+            {
+                id: 'sf12_2b',
+                qNum: '2',
+                mainQuestion: '下列問題是關於您日常生活中可能進行的活動。以您目前的健康狀況，您在進行這些活動時，有沒有受到限制？如果有的話，程度如何？',
+                subLabel: 'b',
+                text: '上幾層樓梯',
+                options: ["有很大限制", "有一點限制", "沒有任何限制"]
+            },
+            {
+                id: 'sf12_3a',
+                qNum: '3',
+                mainQuestion: '在過去四個星期裏，您在工作或其它日常活動中，有多少時間會因為身體健康的原因而遇到下列的問題？',
+                subLabel: 'a',
+                text: '實際做完的比想做的要少',
+                options: ["常常如此", "大部份時間", "有時", "偶爾", "從來沒有"]
+            },
+            {
+                id: 'sf12_3b',
+                qNum: '3',
+                mainQuestion: '在過去四個星期裏，您在工作或其它日常活動中，有多少時間會因為身體健康的原因而遇到下列的問題？',
+                subLabel: 'b',
+                text: '工作或其它活動的種類受到限制',
+                options: ["常常如此", "大部份時間", "有時", "偶爾", "從來沒有"]
+            },
+            {
+                id: 'sf12_4a',
+                qNum: '4',
+                mainQuestion: '在過去的四個星期裏，您在工作或其它日常活動中，有多少時間由於情緒方面的原因(比如感到沮喪或焦慮)遇到下列的問題？',
+                subLabel: 'a',
+                text: '實際做完的比想做的要少',
+                options: ["常常如此", "大部份時間", "有時", "偶爾", "從來沒有"]
+            },
+            {
+                id: 'sf12_4b',
+                qNum: '4',
+                mainQuestion: '在過去的四個星期裏，您在工作或其它日常活動中，有多少時間由於情緒方面的原因(比如感到沮喪或焦慮)遇到下列的問題？',
+                subLabel: 'b',
+                text: '工作時或從事其它活動時不如往常細心了',
+                options: ["常常如此", "大部份時間", "有時", "偶爾", "從來沒有"]
+            },
+            {
+                id: 'sf12_5',
+                qNum: '5',
+                mainQuestion: '在過去四個星期裏，您身體上的疼痛對您的日常工作(包括上班和家務)有多大影響？',
+                subLabel: null,
+                text: '5. 在過去四個星期裏，您身體上的疼痛對您的日常工作(包括上班和家務)有多大影響？',
+                options: ["毫無影響", "有很少影響", "一些影響", "有較大影響", "有極大影響"]
+            },
+            {
+                id: 'sf12_6a',
+                qNum: '6',
+                mainQuestion: '下列問題是有關您在過去四星期裏您覺得怎樣和您其它的情況。針對每一個問題，請選擇一個最接近您的感覺的答案。在過去四星期裏，有多少時間：',
+                subLabel: 'a',
+                text: '您感到心平氣和？',
+                options: ["常常如此", "大部份時間", "有時", "偶爾", "從來沒有"]
+            },
+            {
+                id: 'sf12_6b',
+                qNum: '6',
+                mainQuestion: '下列問題是有關您在過去四星期裏您覺得怎樣和您其它的情況。針對每一個問題，請選擇一個最接近您的感覺的答案。在過去四星期裏，有多少時間：',
+                subLabel: 'b',
+                text: '您感到精力充足？',
+                options: ["常常如此", "大部份時間", "有時", "偶爾", "從來沒有"]
+            },
+            {
+                id: 'sf12_6c',
+                qNum: '6',
+                mainQuestion: '下列問題是有關您在過去四星期裏您覺得怎樣和您其它的情況。針對每一個問題，請選擇一個最接近您的感覺的答案。在過去四星期裏，有多少時間：',
+                subLabel: 'c',
+                text: '您覺得心情不好，悶悶不樂？',
+                options: ["常常如此", "大部份時間", "有時", "偶爾", "從來沒有"]
+            },
+            {
+                id: 'sf12_7',
+                qNum: '7',
+                mainQuestion: '在過去四星期裏，有多少時間由於您的身體健康或情緒問題妨礙了您的社交活動(比如探親、訪友等)？',
+                subLabel: null,
+                text: '7. 在過去四星期裏，有多少時間由於您的身體健康或情緒問題妨礙了您的社交活動(比如探親、訪友等)？',
+                options: ["常常有妨礙", "大部分時間有妨礙", "有時有妨礙", "偶爾有妨礙", "從來沒有妨礙"]
+            }
+        ];
+
+        const tskQuestions = [
+            "1. 如果我運動，我會害怕自己受傷",
+            "2. 如果我嘗試克服，疼痛會加劇",
+            "3. 我的身體告訴自己我犯了非常危險的錯誤",
+            "4. 如果我運動的話，疼痛很可能會緩解",
+            "5. 人們對我的健康狀況不夠關注",
+            "6. 發生的意外使我的身體將來一直承受風險",
+            "7. 疼痛總是意味著身體受到了傷害",
+            "8. 僅僅使疼痛加劇的事情不意味著它們很危險",
+            "9. 我害怕自己會因為意外而受傷",
+            "10. 不做多餘的動作，只要保持小心是我能做到的防止疼痛惡化的最安全的事",
+            "11. 如果我的身體沒有潛在的危險，我不會感到如此疼痛",
+            "12. 我感到很痛，但如果我積極活動情況會好轉",
+            "13. 疼痛使我知道何時停止運動以防止受傷",
+            "14. 像我這樣的狀態而積極活動真的不安全",
+            "15. 我因為容易受傷而無法做常人可以做的事",
+            "16. 儘管有些活動給我帶來了許多疼痛，但我不認為它們很危險",
+            "17. 沒有必要在疼痛時去運動"
+        ];
+        const tskOptions = [
+            "1 = 非常不同意",
+            "2 = 不同意",
+            "3 = 同意",
+            "4 = 非常同意"
+        ];
+
+        const seeQuestions = [
+            "1. 如果天氣使您感到困擾的時候",
+            "2. 如果您對該運動沒有興趣的時候",
+            "3. 如果運動時會感覺疼痛的時候",
+            "4. 如果您一個人運動、沒有人作伴的時候",
+            "5. 如果您覺得沒有感受到運動的樂趣的時候",
+            "6. 如果您忙於其他事情的時候",
+            "7. 如果您覺得疲倦的時候",
+            "8. 如果您覺得有壓力的時候",
+            "9. 如果您覺得心情鬱卒 (憂鬱) 的時候"
+        ];
+
+        // State variables
+        let currentTab = 0; // 0: Demographics, 1: NDI, 2: DASH, 3: SF-12, 4: TSK, 5: SEE, 'completion': Thank you, 6: Summary
+        let isAssessorMode = false;
+
+        window.onload = function() {
+            const savedFs = localStorage.getItem('app_font_size') || 'normal';
+            changeFontSize(savedFs, false);
+
+            // Set today's date
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('assessment-date').value = today;
+
+            // Render all questionnaire forms dynamically
+            renderNDI();
+            renderDASH();
+            renderSF12();
+            renderTSK();
+            renderSEE();
+
+            updateTabUI();
+        };
+
+        function changeFontSize(size, showNotification = true) {
+            const body = document.body;
+            body.classList.remove('font-size-normal', 'font-size-large', 'font-size-xlarge');
+            
+            const normalBtn = document.getElementById('fs-normal-btn');
+            const largeBtn = document.getElementById('fs-large-btn');
+            const xlargeBtn = document.getElementById('fs-xlarge-btn');
+
+            if (normalBtn) normalBtn.className = "px-2.5 py-1 rounded hover:bg-slate-700 transition text-slate-300";
+            if (largeBtn) largeBtn.className = "px-2.5 py-1 rounded hover:bg-slate-700 transition text-slate-300";
+            if (xlargeBtn) xlargeBtn.className = "px-2.5 py-1 rounded hover:bg-slate-700 transition text-slate-300";
+
+            if (size === 'large') {
+                body.classList.add('font-size-large');
+                if (largeBtn) largeBtn.className = "px-2.5 py-1 rounded bg-teal-700 text-white font-semibold transition shadow-xs";
+            } else if (size === 'xlarge') {
+                body.classList.add('font-size-xlarge');
+                if (xlargeBtn) xlargeBtn.className = "px-2.5 py-1 rounded bg-teal-700 text-white font-semibold transition shadow-xs";
+            } else {
+                body.classList.add('font-size-normal');
+                if (normalBtn) normalBtn.className = "px-2.5 py-1 rounded bg-teal-700 text-white font-semibold transition shadow-xs";
+            }
+            localStorage.setItem('app_font_size', size);
+            if (showNotification) {
+                showToast(`已切換至「${size === 'normal' ? '標準' : size === 'large' ? '大' : '特大'}」字體與寬高間距`, 'success');
+            }
+        }
+
+        function renderNDI() {
+            const container = document.getElementById('ndi-questions-container');
+            let html = '';
+            ndiQuestions.forEach((q, qIdx) => {
+                const optionalNote = qIdx === 7
+                    ? ` <span class="ml-2 inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-700 border border-amber-200">非駕駛者請選「不適用」</span>`
+                    : '';
+                html += `<div class="p-4 rounded-xl border border-slate-200 bg-slate-50/50 ndi-item" data-index="${qIdx}">
+                    <p class="text-xs sm:text-sm font-bold text-slate-800 mb-3">${q.title}${optionalNote}</p>
+                    <div class="space-y-2">`;
+                q.options.forEach((opt, oIdx) => {
+                    html += `<label class="flex items-start gap-3 p-2.5 rounded-lg border border-slate-200 bg-white hover:bg-teal-50/40 cursor-pointer transition text-xs sm:text-sm">
+                        <input type="radio" name="ndi_${qIdx}" value="${qIdx === 7 && oIdx === 6 ? 'NA' : oIdx}" onchange="updateSectionProgress('ndi', 10); clearQuestionHighlight('ndi', qIdx)" class="mt-0.5 text-teal-600 focus:ring-teal-500">
+                        <span class="text-slate-700 leading-relaxed"><strong class="text-teal-700 mr-1">${qIdx === 7 && oIdx === 6 ? 'N/A' : oIdx}.</strong> ${opt}</span>
+                    </label>`;
+                });
+                html += `</div></div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function renderDASH() {
+            const container = document.getElementById('dash-questions-container');
+            let html = '';
+            let currentSection = null;
+
+            dashQuestions.forEach((q, qIdx) => {
+                if (q.section !== currentSection) {
+                    if (currentSection !== null) html += `</div></section>`;
+                    currentSection = q.section;
+
+                    const isActivity = q.number <= 23;
+                    const instruction = isActivity
+                        ? "請評估你過去一星期內，進行下列活動的能力，並選出最適合的答案。"
+                        : "請根據你過去一星期內，以下病癥的嚴重程度，選出最適合的答案。";
+
+                    html += `
+                        <section class="mb-7">
+                            <div class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                                <div class="px-5 py-4 bg-gradient-to-r from-teal-50 to-white border-b border-slate-200">
+                                    <div class="flex items-start gap-3">
+                                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-600 text-white shadow-sm">
+                                            <i class="fa-solid ${isActivity ? 'fa-person-running' : 'fa-heart-pulse'}"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="text-base sm:text-lg font-extrabold text-slate-900">${q.section}</h3>
+                                            <p class="mt-1 text-xs sm:text-sm leading-5 text-slate-600">${instruction}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="px-4 sm:px-5 py-4 space-y-4">`;
+                }
+
+                html += `
+                    <div class="p-4 sm:p-5 rounded-2xl border border-slate-200 bg-slate-50/60 dash-item transition-all" data-index="${qIdx}">
+                        <div class="flex items-start gap-3 mb-4">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-800 text-white text-xs font-bold">${q.number}</span>
+                            <p class="text-sm sm:text-base font-bold leading-6 text-slate-800">${q.text}</p>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-5 gap-2.5">
+                            ${q.options.map((opt, oIdx) => {
+                                const isNA = opt === '不適用';
+                                const value = isNA ? 'NA' : String(oIdx + 1);
+                                const label = isNA ? 'N/A' : String(oIdx + 1);
+                                return `
+                                <label class="dash-option group relative flex items-center sm:flex-col sm:justify-center sm:text-center gap-3 sm:gap-2 min-h-[58px] p-3 rounded-xl border border-slate-200 bg-white hover:border-teal-400 hover:bg-teal-50/60 cursor-pointer transition-all">
+                                    <input type="radio" name="dash_${qIdx}" value="${value}"
+                                           onchange="updateSectionProgress('dash', 30); clearQuestionHighlight('dash', qIdx)"
+                                           class="peer sr-only">
+                                    <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-slate-300 bg-white ${isNA ? 'dash-na-label' : 'text-xs'} font-bold text-slate-500 peer-checked:border-teal-600 peer-checked:bg-teal-600 peer-checked:text-white transition-all">
+                                        ${label}
+                                    </span>
+                                    <span class="text-xs sm:text-sm leading-5 font-medium text-slate-700 peer-checked:text-teal-800">${opt}</span>
+                                    <span class="absolute inset-0 rounded-xl ring-2 ring-transparent peer-checked:ring-teal-500/40 pointer-events-none"></span>
+                                </label>`;
+                            }).join('')}
+                        </div>
+                    </div>`;
+            });
+
+            if (currentSection !== null) html += `</div></section>`;
+            container.innerHTML = html;
+        }
+
+        function renderSF12() {
+            const container = document.getElementById('sf12-questions-container');
+            let html = '';
+            
+            // Group SF-12 questions by main numbered questions (Questions 1 to 7)
+            let currentQNum = null;
+
+            sf12Questions.forEach((q, qIdx) => {
+                // When starting a new main numbered question section
+                if (q.qNum !== currentQNum) {
+                    if (currentQNum !== null) {
+                        html += `</div></div>`; // Close previous question section container
+                    }
+                    currentQNum = q.qNum;
+                    html += `
+                    <div class="bg-slate-50/80 rounded-xl border border-teal-200/80 p-4 sm:p-5 mb-6 shadow-2xs">
+                        <div class="flex items-start gap-3 border-b border-teal-100 pb-3 mb-4">
+                            <span class="bg-teal-700 text-white font-extrabold px-2.5 py-1 rounded-lg text-xs shadow-2xs shrink-0 mt-0.5">問題 ${q.qNum}</span>
+                            <h3 class="text-xs sm:text-sm font-bold text-teal-950 leading-relaxed">${q.mainQuestion}</h3>
+                        </div>
+                        <div class="space-y-3">`;
+                }
+
+                // Render each sub-item card
+                html += `<div class="p-4 rounded-xl border border-slate-200 bg-white shadow-2xs hover:border-teal-300 transition-all duration-150 sf12-item" data-index="${qIdx}">`;
+                
+                if (q.subLabel) {
+                    html += `<p class="text-xs sm:text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+                        <span class="bg-teal-50 text-teal-700 border border-teal-200 font-extrabold px-2 py-0.5 rounded text-xs">${q.subLabel}</span>
+                        <span>${q.text}</span>
+                    </p>`;
+                }
+
+                html += `<div class="grid grid-cols-1 sm:grid-cols-${Math.min(q.options.length, 5)} gap-2">`;
+                q.options.forEach((opt, oIdx) => {
+                    html += `<label class="flex items-center sm:flex-col sm:text-center gap-2 p-2.5 rounded-lg border border-slate-200 bg-slate-50/50 hover:bg-teal-50/60 cursor-pointer transition text-xs">
+                        <input type="radio" name="sf12_${qIdx}" value="${oIdx + 1}" onchange="updateSectionProgress('sf12', 12); clearQuestionHighlight('sf12', qIdx)" class="text-teal-600 focus:ring-teal-500">
+                        <span class="font-medium text-slate-700">${opt}</span>
+                    </label>`;
+                });
+                html += `</div></div>`;
+            });
+
+            if (currentQNum !== null) {
+                html += `</div></div>`; // Close final question section container
+            }
+
+            container.innerHTML = html;
+        }
+
+        function renderTSK() {
+            const container = document.getElementById('tsk-questions-container');
+            let html = '';
+            tskQuestions.forEach((qText, qIdx) => {
+                html += `<div class="p-4 rounded-xl border border-slate-200 bg-slate-50/50 tsk-item" data-index="${qIdx}">
+                    <p class="text-xs sm:text-sm font-bold text-slate-800 mb-3">${qText}</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-2">`;
+                for (let i = 1; i <= 4; i++) {
+                    html += `<label class="flex items-center sm:flex-col sm:text-center gap-2 p-2.5 rounded-lg border border-slate-200 bg-white hover:bg-teal-50/40 cursor-pointer transition text-xs">
+                        <input type="radio" name="tsk_${qIdx}" value="${i}" onchange="updateSectionProgress('tsk', 17); clearQuestionHighlight('tsk', qIdx)" class="text-teal-600 focus:ring-teal-500">
+                        <span class="font-medium text-slate-700">${tskOptions[i-1]}</span>
+                    </label>`;
+                }
+                html += `</div></div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function renderSEE() {
+            const container = document.getElementById('see-questions-container');
+            let html = '';
+
+            // Put the key instruction in a prominent, easy-to-scan banner before the questions.
+            html += `<div class="mb-6 p-4 sm:p-5 rounded-xl bg-teal-50 border-2 border-teal-300 shadow-sm">
+                <div class="flex items-start gap-3">
+                    <div class="shrink-0 w-9 h-9 rounded-full bg-teal-600 text-white flex items-center justify-center shadow-sm">
+                        <i class="fa-solid fa-circle-info"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="text-sm sm:text-base font-extrabold text-teal-950 mb-1">請先閱讀以下說明，再回答每一題</div>
+                        <p class="text-sm sm:text-base font-semibold leading-relaxed text-slate-800">
+                            以下是假設的情況，請選取您有多少信心可以運動。
+                            <span class="text-teal-800">分數越高代表您越有信心。</span>
+                        </p>
+                    </div>
+                </div>
+                <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm font-bold">
+                    <div class="bg-white rounded-lg border border-rose-200 px-3 py-2 text-rose-700">
+                        <span class="font-black">0</span> = 完全沒信心
+                    </div>
+                    <div class="bg-white rounded-lg border border-teal-300 px-3 py-2 text-teal-800 sm:text-right">
+                        <span class="font-black">10</span> = 非常有信心
+                    </div>
+                </div>
+            </div>`;
+
+            seeQuestions.forEach((qText, qIdx) => {
+                html += `<div class="p-4 rounded-xl border border-slate-200 bg-slate-50/50 see-item" data-index="${qIdx}">
+                    <p class="text-xs sm:text-sm font-bold text-slate-800 mb-3">${qText}</p>
+                    <div class="see-scale-options">`;
+                for (let i = 0; i <= 10; i++) {
+                    html += `<label class="see-scale-option" for="see_${qIdx}_${i}" aria-label="${i} 分">
+                        <input type="radio" id="see_${qIdx}_${i}" name="see_${qIdx}" value="${i}" onchange="updateSectionProgress('see', 9); clearQuestionHighlight('see', qIdx)">
+                        <span class="font-black text-base">${i}</span>
+                    </label>`;
+                }
+                html += `</div>
+                    <div class="flex justify-between items-start mt-2 px-1 text-[11px] sm:text-xs font-bold">
+                        <span class="text-rose-600">完全沒信心</span>
+                        
+                        <span class="text-teal-700">非常有信心</span>
+                    </div>
+                </div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function clearQuestionHighlight(prefix, index) {
+            const container = document.querySelector(`.${prefix}-item[data-index="${index}"]`);
+            if (container) {
+                container.classList.remove('unanswered-highlight');
+            }
+        }
+
+        function updateSectionProgress(prefix, totalCount, optionalIndices = []) {
+            let answeredRequired = 0;
+            let requiredCount = 0;
+            const optionalSet = new Set(optionalIndices);
+            for (let i = 0; i < totalCount; i++) {
+                if (optionalSet.has(i)) continue;
+                requiredCount++;
+                if (document.querySelector(`input[name="${prefix}_${i}"]:checked`)) {
+                    answeredRequired++;
+                }
+            }
+            const percent = requiredCount > 0 ? Math.round((answeredRequired / requiredCount) * 100) : 100;
+            const bar = document.getElementById(`${prefix}-progress-bar`);
+            const text = document.getElementById(`${prefix}-progress-text`);
+            if (bar) bar.style.width = `${percent}%`;
+            if (text) text.innerText = `${percent}% 完成 (${answeredRequired}/${requiredCount} 題)`;
+            
+        }
+
+        function clearParticipantFieldHighlight(element) {
+            if (element && element.value.trim()) {
+                element.classList.remove('unanswered-highlight');
+            }
+        }
+
+        function clearDateHighlight() {
+            const dateEl = document.getElementById('assessment-date');
+            if (dateEl && dateEl.value) {
+                dateEl.classList.remove('unanswered-highlight');
+            }
+        }
+
+        function clearAnsweredControlHighlight(element) {
+            if (!element) return;
+
+            if (element.type === 'radio' || element.type === 'checkbox') {
+                if (element.checked) {
+                    const container = element.closest(
+                        '.ndi-item, .dash-item, .sf12-item, .tsk-item, .see-item'
+                    );
+                    if (container) container.classList.remove('unanswered-highlight');
+                }
+            } else if (element.value && element.value.trim()) {
+                element.classList.remove('unanswered-highlight');
+            }
+        }
+
+        function selectTimepoint(tp) {
+            document.getElementById('assessment-timepoint').value = tp;
+            syncTimepointButtons();
+        }
+
+        function syncTimepointButtons() {
+            const selectedTp = document.getElementById('assessment-timepoint')?.value || '';
+            const isParticipantInfoDisplayed = currentTab === 0;
+            const buttons = document.querySelectorAll('.tp-option-btn');
+
+            buttons.forEach(btn => {
+                btn.classList.remove('tp-active', 'unanswered-highlight');
+                btn.setAttribute('aria-pressed', 'false');
+            });
+
+            if (!isParticipantInfoDisplayed || !selectedTp) return;
+
+            const selectedBtn = selectedTp === 'Pre-exercise' ? document.getElementById('tp-btn-pre') :
+                                selectedTp === 'Post-5-weeks-exercise' ? document.getElementById('tp-btn-post') :
+                                selectedTp === '6-Months-after' ? document.getElementById('tp-btn-followup') : null;
+            if (selectedBtn) {
+                selectedBtn.classList.add('tp-active');
+                selectedBtn.setAttribute('aria-pressed', 'true');
+            }
+        }
+
+        document.getElementById('participant-name')?.addEventListener('input', function() {
+            clearParticipantFieldHighlight(this);
+        });
+        document.getElementById('participant-id')?.addEventListener('input', function() {
+            clearParticipantFieldHighlight(this);
+        });
+        document.getElementById('assessment-date')?.addEventListener('change', function() {
+            clearDateHighlight();
+        });
+        document.getElementById('assessment-date')?.addEventListener('input', function() {
+            clearDateHighlight();
+        });
+
+        // Safety net for any radio/checkbox/select question:
+        // once answered, its red required highlight is removed immediately.
+        document.addEventListener('change', function(event) {
+            clearAnsweredControlHighlight(event.target);
+        });
+
+        function switchTab(tabIndex) {
+            if (tabIndex === 'history') {
+                if (!isAssessorMode) {
+                    showToast('歷史紀錄僅限評估員模式使用！', 'error');
+                    return;
+                }
+                document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+                document.getElementById('step-history').classList.remove('hidden');
+                updateNavigationActiveState('history');
+                renderRecordsTable();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            }
+
+            if (tabIndex === 'completion') {
+                document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+                document.getElementById('step-completion').classList.remove('hidden');
+                updateNavigationActiveState('completion');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            }
+
+            // Summary report (tabIndex === 6) is assessor only
+            if (tabIndex === 6 && !isAssessorMode) {
+                showToast('總結報告僅限評估員解鎖後檢視！', 'error');
+                return;
+            }
+
+            // Validation check if in participant mode
+            if (!isAssessorMode && typeof tabIndex === 'number' && tabIndex > currentTab && currentTab !== 'completion') {
+                if (!validateCurrentStep(currentTab)) {
+                    showToast('請先完成本頁面所有問題才能繼續！NDI 第 8 題若不駕駛 / 開車，請選擇「不適用」。', 'error');
+                    return;
+                }
+            }
+
+            currentTab = tabIndex;
+            updateTabUI();
+            if (tabIndex === 6) {
+                calculateAndDisplaySummary();
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function handleTabClick(index) {
+            if (isAssessorMode || index <= currentTab || index === 6) {
+                switchTab(index);
+            } else {
+                if (validateCurrentStep(currentTab)) {
+                    switchTab(index);
+                } else {
+                    showToast('請依序完成目前步驟的所有問題。', 'error');
+                }
+            }
+        }
+
+        async function handleNextStep(stepIdx) {
+            if (!isAssessorMode && !validateCurrentStep(stepIdx)) {
+                showToast('請回答所有標紅框的問題！', 'error');
+                return;
+            }
+            if (stepIdx < 5) {
+                switchTab(stepIdx + 1);
+            } else {
+                // After SEE Scale (Step 5), if participant mode, save automatically and show thank you screen
+                if (!isAssessorMode) {
+                    await saveCurrentAssessment();
+                    switchTab('completion');
+                } else {
+                    // Assessor can jump straight to summary report
+                    await saveCurrentAssessment();
+                    switchTab(6);
+                }
+            }
+        }
+
+        function validateCurrentStep(step) {
+            let isValid = true;
+            if (step === 0) {
+                const name = document.getElementById('participant-name').value.trim();
+                const id = document.getElementById('participant-id').value.trim();
+                const date = document.getElementById('assessment-date').value;
+                const tp = document.getElementById('assessment-timepoint').value;
+                if (!name || !id || !date || !tp) {
+                    isValid = false;
+                }
+
+                // Highlight each missing required field independently,
+                // and clear it immediately once it is completed.
+                const nameEl = document.getElementById('participant-name');
+                const idEl = document.getElementById('participant-id');
+                const dateEl = document.getElementById('assessment-date');
+                const tpButtons = document.querySelectorAll('.tp-option-btn');
+
+                nameEl.classList.toggle('unanswered-highlight', !name);
+                idEl.classList.toggle('unanswered-highlight', !id);
+                dateEl.classList.toggle('unanswered-highlight', !date);
+
+                tpButtons.forEach(btn => btn.classList.remove('unanswered-highlight'));
+                if (!tp) {
+                    tpButtons.forEach(btn => btn.classList.add('unanswered-highlight'));
+                }
+            } else if (step === 1) {
+                // NDI: all 10 questions must have a selection. For Q8 (駕駛 / 開車),
+                // non-drivers complete the item by selecting "不適用 (我不駕駛 / 開車)".
+                for (let i = 0; i < 10; i++) {
+                    const radios = document.querySelectorAll(`input[name="ndi_${i}"]`);
+                    const container = document.querySelector(`.ndi-item[data-index="${i}"]`);
+                    const answered = Array.from(radios).some(r => r.checked);
+                    if (!answered) {
+                        isValid = false;
+                        if (container) container.classList.add('unanswered-highlight');
+                    } else {
+                        if (container) container.classList.remove('unanswered-highlight');
+                    }
+                }
+            } else if (step === 2) {
+                // DASH 30 items
+                for (let i = 0; i < 30; i++) {
+                    const radios = document.querySelectorAll(`input[name="dash_${i}"]`);
+                    const container = document.querySelector(`.dash-item[data-index="${i}"]`);
+                    const answered = Array.from(radios).some(r => r.checked);
+                    if (!answered) {
+                        isValid = false;
+                        if(container) container.classList.add('unanswered-highlight');
+                    } else {
+                        if(container) container.classList.remove('unanswered-highlight');
+                    }
+                }
+            } else if (step === 3) {
+                // SF-12 12 items
+                for (let i = 0; i < 12; i++) {
+                    const radios = document.querySelectorAll(`input[name="sf12_${i}"]`);
+                    const container = document.querySelector(`.sf12-item[data-index="${i}"]`);
+                    const answered = Array.from(radios).some(r => r.checked);
+                    if (!answered) {
+                        isValid = false;
+                        if(container) container.classList.add('unanswered-highlight');
+                    } else {
+                        if(container) container.classList.remove('unanswered-highlight');
+                    }
+                }
+            } else if (step === 4) {
+                // TSK 17 items
+                for (let i = 0; i < 17; i++) {
+                    const radios = document.querySelectorAll(`input[name="tsk_${i}"]`);
+                    const container = document.querySelector(`.tsk-item[data-index="${i}"]`);
+                    const answered = Array.from(radios).some(r => r.checked);
+                    if (!answered) {
+                        isValid = false;
+                        if(container) container.classList.add('unanswered-highlight');
+                    } else {
+                        if(container) container.classList.remove('unanswered-highlight');
+                    }
+                }
+            } else if (step === 5) {
+                // SEE 9 items
+                for (let i = 0; i < 9; i++) {
+                    const radios = document.querySelectorAll(`input[name="see_${i}"]`);
+                    const container = document.querySelector(`.see-item[data-index="${i}"]`);
+                    const answered = Array.from(radios).some(r => r.checked);
+                    if (!answered) {
+                        isValid = false;
+                        if(container) container.classList.add('unanswered-highlight');
+                    } else {
+                        if(container) container.classList.remove('unanswered-highlight');
+                    }
+                }
+            }
+            return isValid;
+        }
+
+        function updateNavigationActiveState(activeTab) {
+            const base = "flex-1 py-2.5 px-3 rounded-lg text-center transition flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-100";
+            const active = "flex-1 py-2.5 px-3 rounded-lg text-center transition flex items-center justify-center gap-1.5 bg-teal-700 text-white font-semibold";
+
+            for (let i = 0; i <= 6; i++) {
+                const btn = document.getElementById(`tab-btn-${i}`);
+                if (!btn) continue;
+                btn.className = base + (btn.id === 'tab-btn-6' && !isAssessorMode ? ' hidden' : '');
+                const badge = btn.querySelector('span');
+                if (badge) badge.className = "w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-xs text-slate-700";
+                if (activeTab === i) {
+                    btn.className = active;
+                    if (badge) badge.className = "w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-xs";
+                }
+            }
+
+            const historyBtn = document.getElementById('tab-btn-history');
+            if (historyBtn) {
+                historyBtn.className = base + (isAssessorMode ? '' : ' hidden');
+                if (activeTab === 'history') {
+                    historyBtn.className = active;
+                }
+            }
+        }
+
+        function updateTabUI() {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            if (currentTab === 'completion') {
+                document.getElementById('step-completion').classList.remove('hidden');
+                return;
+            }
+            const targetStepId = `step-${currentTab}`;
+            const targetEl = document.getElementById(targetStepId);
+            if(targetEl) targetEl.classList.remove('hidden');
+
+            updateNavigationActiveState(currentTab);
+
+            // Timepoint buttons are green only while the participant-information/session
+            // selection screen is actually displayed.
+            syncTimepointButtons();
+
+            // Recalculate the active questionnaire progress bar's original position
+            // after the new panel becomes visible.
+        }
+
+        function calculateScores() {
+            // 1. NDI Calculation
+            // All 10 items must be completed. Q8 has a "不適用" response for non-drivers;
+            // that response is recorded but omitted from the scoring denominator.
+            let ndiSum = 0, ndiCompleted = 0, ndiScored = 0;
+            const ndiDetails = [];
+            for (let i = 0; i < 10; i++) {
+                const selected = document.querySelector(`input[name="ndi_${i}"]:checked`);
+                const rawValue = selected ? selected.value : null;
+                const isNotApplicable = i === 7 && rawValue === 'NA';
+                const val = selected && !isNotApplicable ? parseInt(rawValue, 10) : null;
+                if (selected) ndiCompleted++;
+                if (val !== null && Number.isFinite(val)) {
+                    ndiScored++;
+                    ndiSum += val;
+                }
+                ndiDetails.push({ q: ndiQuestions[i].title, score: isNotApplicable ? 'NA' : val });
+            }
+            // The NDI percentage uses only numerically scored items; Q8 "不適用" is omitted.
+            const ndiMaxScore = ndiScored * 5;
+            const ndiPercentage = ndiMaxScore > 0 ? (ndiSum / ndiMaxScore) * 100 : 0;
+            let ndiSev = "無失能 (0-8%)";
+            if (ndiPercentage > 60) ndiSev = "完全殘障 (>60%)";
+            else if (ndiPercentage > 40) ndiSev = "嚴重失能 (41-60%)";
+            else if (ndiPercentage > 20) ndiSev = "中度失能 (21-40%)";
+            else if (ndiPercentage > 8) ndiSev = "輕度失能 (9-20%)";
+
+            // 2. DASH Calculation
+            // DASH Q8, Q18 and Q21 may be answered as N/A. N/A responses are
+            // retained in the item-level record but omitted from the DASH score
+            // numerator and denominator. The standard DASH calculation is:
+            // ((sum of scored item responses / number of scored items) - 1) * 25.
+            let dashSum = 0;
+            let dashScored = 0;
+            const dashDetails = [];
+            for (let i = 0; i < 30; i++) {
+                const selected = document.querySelector(`input[name="dash_${i}"]:checked`);
+                const isNotApplicable = selected?.value === 'NA';
+                const val = selected ? parseInt(selected.value, 10) : null;
+                if (!isNotApplicable && Number.isFinite(val)) {
+                    dashSum += val;
+                    dashScored++;
+                }
+                dashDetails.push({ q: dashQuestions[i]?.text || `Question ${i + 1}`, score: isNotApplicable ? 'NA' : val });
+            }
+            const dashScore = dashScored > 0 ? ((dashSum / dashScored) - 1) * 25 : 0;
+            let dashSev = "正常 / 極小困難";
+            if (dashScore > 60) dashSev = "嚴重上肢功能受損";
+            else if (dashScore > 40) dashSev = "中度至重度困難";
+            else if (dashScore > 20) dashSev = "輕度困難";
+
+            // 3. SF-12 v2 Calculation
+            // The questionnaire in this site is the standard 12-item / 7-question
+            // structure. PCS/MCS must NOT be calculated from a simple sum of the
+            // 12 response codes. The validated SF-12 v2 algorithm first recodes
+            // items, derives the eight 0-100 scales, standardizes them against the
+            // 1998 US general population, applies the published factor coefficients,
+            // and finally transforms the component scores to mean 50, SD 10.
+            const sf12Answers = [];
+            const sf12Details = [];
+            let sf12Answered = 0;
+            for (let i = 0; i < 12; i++) {
+                const selected = document.querySelector(`input[name="sf12_${i}"]:checked`);
+                const val = selected ? parseInt(selected.value, 10) : null;
+                if (selected) sf12Answered++;
+                sf12Answers.push(val);
+                sf12Details.push({ q: sf12Questions[i].text, score: val });
+            }
+
+            let sf12Result = {
+                pcs: "—",
+                mcs: "—",
+                rawSum: null,
+                complete: sf12Answered === 12,
+                details: sf12Details
+            };
+
+            if (sf12Answered === 12) {
+                // Item mapping:
+                // 1=GH; 2a/2b=PF; 3a/3b=RP; 4a/4b=RE;
+                // 5=BP; 6a/6b/6c=MH/VT; 7=SF.
+                const [i1, i2a, i2b, i3a, i3b, i4a, i4b, i5, i6a, i6b, i6c, i7] = sf12Answers;
+
+                // SF-12 v2 response recoding from the published scoring syntax.
+                // GH uses the v2 calibrated values rather than simple 1-5 reversal.
+                const ghRecoded = ({1: 5.0, 2: 4.4, 3: 3.4, 4: 2.0, 5: 1.0})[i1];
+                const bpRecoded = 6 - i5;
+                const calmRecoded = 6 - i6a;
+                const vitalityRecoded = 6 - i6b;
+
+                const PF = 100 * ((i2a + i2b) - 2) / 4;
+                const RP = 100 * ((i3a + i3b) - 2) / 8;
+                const BP = 100 * (bpRecoded - 1) / 4;
+                const GH = 100 * (ghRecoded - 1) / 4;
+                const VT = 100 * (vitalityRecoded - 1) / 4;
+                const SF = 100 * (i7 - 1) / 4;
+                const RE = 100 * ((i4a + i4b) - 2) / 8;
+                const MH = 100 * ((calmRecoded + i6c) - 2) / 8;
+
+                // 1998 US general-population means and SDs used by the standard
+                // SF-12 v2 norm-based scoring algorithm.
+                const PF_Z = (PF - 81.18122) / 29.10588;
+                const RP_Z = (RP - 80.52856) / 27.13526;
+                const BP_Z = (BP - 81.74015) / 24.53019;
+                const GH_Z = (GH - 72.19795) / 23.19041;
+                const VT_Z = (VT - 55.59090) / 24.84380;
+                const SF_Z = (SF - 83.73973) / 24.75775;
+                const RE_Z = (RE - 86.41051) / 22.35543;
+                const MH_Z = (MH - 70.18217) / 20.50597;
+
+                const aggPhys =
+                    PF_Z * 0.42402 +
+                    RP_Z * 0.35119 +
+                    BP_Z * 0.31754 +
+                    GH_Z * 0.24954 +
+                    VT_Z * 0.02877 +
+                    SF_Z * -0.00753 +
+                    RE_Z * -0.19206 +
+                    MH_Z * -0.22069;
+
+                const aggMent =
+                    PF_Z * -0.22999 +
+                    RP_Z * -0.12329 +
+                    BP_Z * -0.09731 +
+                    GH_Z * -0.01571 +
+                    VT_Z * 0.23534 +
+                    SF_Z * 0.26876 +
+                    RE_Z * 0.43407 +
+                    MH_Z * 0.48581;
+
+                sf12Result = {
+                    pcs: (50 + aggPhys * 10).toFixed(2),
+                    mcs: (50 + aggMent * 10).toFixed(2),
+                    rawSum: sf12Answers.reduce((a, b) => a + b, 0),
+                    complete: true,
+                    details: sf12Details,
+                    domains: {
+                        PF: PF.toFixed(1), RP: RP.toFixed(1), BP: BP.toFixed(1), GH: GH.toFixed(1),
+                        VT: VT.toFixed(1), SF: SF.toFixed(1), RE: RE.toFixed(1), MH: MH.toFixed(1)
+                    }
+                };
+            }
+
+            // 4. TSK-17 Calculation
+            // Standard TSK-17 scoring: items 4, 8, 12 and 16 are reverse scored
+            // (1↔4, 2↔3). Total score therefore ranges from 17 to 68.
+            let tskSum = 0;
+            let tskAnswered = 0;
+            const tskDetails = [];
+            const tskReverseItems = new Set([3, 7, 11, 15]); // zero-based: 4, 8, 12, 16
+            for (let i = 0; i < 17; i++) {
+                const selected = document.querySelector(`input[name="tsk_${i}"]:checked`);
+                const raw = selected ? parseInt(selected.value, 10) : null;
+                if (selected) tskAnswered++;
+                const scored = raw === null ? null : (tskReverseItems.has(i) ? 5 - raw : raw);
+                if (scored !== null) tskSum += scored;
+                tskDetails.push({ q: tskQuestions[i], score: scored, rawScore: raw, reversed: tskReverseItems.has(i) });
+            }
+
+            const tskComplete = tskAnswered === 17;
+            const tskScore = tskComplete ? tskSum : null;
+            let tskSev = "—";
+            if (tskComplete) {
+                tskSev = tskScore >= 37 ? "較高運動恐懼程度 (≥37)" : "較低運動恐懼程度 (<37)";
+            }
+
+            // 5. SEE Scale Calculation
+            let seeSum = 0;
+            const seeDetails = [];
+            for (let i = 0; i < 9; i++) {
+                const selected = document.querySelector(`input[name="see_${i}"]:checked`);
+                const val = selected ? parseInt(selected.value, 10) : 0;
+                seeSum += val;
+                seeDetails.push({ q: seeQuestions[i], score: val });
+            }
+            const seeMean = seeSum / 9;
+            let seeSev = seeMean >= 7 ? "高運動自我效能 (信心充足)" : seeMean >= 4 ? "中度運動自我效能" : "低運動自我效能";
+
+            return {
+                name: document.getElementById('participant-name').value || '未命名',
+                id: document.getElementById('participant-id').value || 'N/A',
+                date: document.getElementById('assessment-date').value,
+                timepoint: document.getElementById('assessment-timepoint').value || 'Pre-exercise',
+                ndi: { percentage: ndiPercentage.toFixed(1), raw: `${ndiSum} / ${ndiMaxScore}`, answered: ndiCompleted, scored: ndiScored, severity: ndiSev, details: ndiDetails },
+                dash: { score: dashScore.toFixed(1), severity: dashSev, scored: dashScored, details: dashDetails },
+                sf12: sf12Result,
+                tsk: { score: tskScore, severity: tskSev, details: tskDetails, complete: tskComplete },
+                see: { mean: seeMean.toFixed(1), raw: `${seeSum} / 90`, severity: seeSev, details: seeDetails }
+            };
+        }
+
+        function calculateAndDisplaySummary() {
+            const res = calculateScores();
+
+            document.getElementById('summary-patient-name').innerText = res.name;
+            document.getElementById('summary-patient-id').innerText = res.id;
+            document.getElementById('summary-date').innerText = res.date;
+            const tpMap = { 'Pre-exercise': '運動前', 'Post-5-weeks-exercise': '五星期運動後', '6-Months-after': '六個月後' };
+            document.getElementById('summary-timepoint').innerText = tpMap[res.timepoint] || res.timepoint;
+
+            document.getElementById('summary-ndi-score').innerText = `${res.ndi.percentage}%`;
+            document.getElementById('summary-ndi-raw').innerText = `(${res.ndi.raw} 分；計分 ${res.ndi.scored ?? res.ndi.answered} 題)`;
+            document.getElementById('summary-ndi-severity').innerText = res.ndi.severity;
+
+            document.getElementById('summary-dash-score').innerText = res.dash.score;
+            const dashScoreNote = document.getElementById('summary-dash-score')?.parentElement?.querySelector('.text-xs.text-slate-500');
+            if (dashScoreNote) dashScoreNote.innerText = `範圍：0（無失能）至 100（極嚴重）；計分 ${res.dash.scored ?? 30}/30 題`;
+            document.getElementById('summary-dash-severity').innerText = res.dash.severity;
+
+            document.getElementById('summary-sf12-pcs').innerText = res.sf12.pcs;
+            document.getElementById('summary-sf12-mcs').innerText = res.sf12.mcs;
+
+            document.getElementById('summary-tsk-score').innerText = res.tsk.complete ? `${res.tsk.score} / 68` : '—';
+            document.getElementById('summary-tsk-severity').innerText = res.tsk.severity;
+
+            document.getElementById('summary-see-score').innerText = `${res.see.mean} / 10`;
+            document.getElementById('summary-see-raw').innerText = `(原始總分: ${res.see.raw})`;
+            document.getElementById('summary-see-severity').innerText = res.see.severity;
+
+            renderBreakdowns(res);
+        }
+
+        function renderBreakdowns(res) {
+            let ndiHtml = `<h4 class="font-bold text-xs text-teal-800 uppercase mb-2">NDI 頸部失能細節</h4><ul class="space-y-1 text-xs text-slate-600">`;
+            res.ndi.details.forEach((d, i) => ndiHtml += `<li><strong>${i+1}. ${d.q}</strong>: 得分 ${d.score}</li>`);
+            ndiHtml += `</ul>`;
+            document.getElementById('breakdown-ndi-container').innerHTML = ndiHtml;
+
+            let dashHtml = `<h4 class="font-bold text-xs text-teal-800 uppercase mb-2">DASH 上肢功能細節</h4><ul class="space-y-1 text-xs text-slate-600">`;
+            res.dash.details.forEach((d, i) => dashHtml += `<li><strong>${i+1}. ${d.q}</strong>: ${d.score} 分</li>`);
+            dashHtml += `</ul>`;
+            document.getElementById('breakdown-dash-container').innerHTML = dashHtml;
+
+            let sf12Html = `<h4 class="font-bold text-xs text-teal-800 uppercase mb-2">SF-12 生活品質細節</h4><ul class="space-y-1 text-xs text-slate-600">`;
+            res.sf12.details.forEach((d, i) => sf12Html += `<li><strong>${d.q}</strong>: 選項代碼 ${d.score}</li>`);
+            sf12Html += `</ul>`;
+            document.getElementById('breakdown-sf12-container').innerHTML = sf12Html;
+
+            let tskHtml = `<h4 class="font-bold text-xs text-teal-800 uppercase mb-2">TSK 運動恐懼細節</h4><ul class="space-y-1 text-xs text-slate-600">`;
+            res.tsk.details.forEach((d, i) => tskHtml += `<li><strong>${i+1}. ${d.q}</strong>: ${d.score} 分</li>`);
+            tskHtml += `</ul>`;
+            document.getElementById('breakdown-tsk-container').innerHTML = tskHtml;
+
+            let seeHtml = `<h4 class="font-bold text-xs text-teal-800 uppercase mb-2">SEE 運動自我效能細節</h4><ul class="space-y-1 text-xs text-slate-600">`;
+            res.see.details.forEach((d, i) => seeHtml += `<li><strong>${i+1}. ${d.q}</strong>: ${d.score} 分</li>`);
+            seeHtml += `</ul>`;
+            document.getElementById('breakdown-see-container').innerHTML = seeHtml;
+        }
+
+        async function saveCurrentAssessment() {
+            try {
+                const res = calculateScores();
+                let records = JSON.parse(localStorage.getItem('clinical_records') || '[]');
+                const existingIdx = records.findIndex(r => r.id === res.id && r.timepoint === res.timepoint);
+                if (existingIdx >= 0) records[existingIdx] = res; else records.push(res);
+                localStorage.setItem('clinical_records', JSON.stringify(records));
+
+                if (CLOUD_ENABLED) {
+                    const { error } = await supabaseClient.from(CLOUD_TABLE).upsert({
+                        participant_id: res.id,
+                        timepoint: res.timepoint,
+                        record_data: res,
+                        updated_at: new Date().toISOString()
+                    }, { onConflict: 'participant_id,timepoint' });
+                    if (error) throw error;
+                    showToast('評估資料已成功儲存至雲端。', 'success');
+                } else {
+                    showToast('評估資料已成功儲存於本機。', 'success');
+                }
+                return true;
+            } catch (error) {
+                console.error('Save assessment failed:', error);
+                showToast(CLOUD_ENABLED ? '雲端資料儲存失敗，請檢查 Supabase 設定。' : '資料儲存失敗，請檢查瀏覽器儲存空間。', 'error');
+                return false;
+            }
+        }
+
+        function getStoredRecords() {
+            try { return JSON.parse(localStorage.getItem('clinical_records') || '[]'); }
+            catch (_) { return []; }
+        }
+
+        async function refreshRecordsFromCloud() {
+            if (!CLOUD_ENABLED) return;
+            try {
+                const { data, error } = await supabaseClient.from(CLOUD_TABLE)
+                    .select('participant_id,timepoint,record_data,updated_at')
+                    .order('updated_at', { ascending: false });
+                if (error) throw error;
+                const cloudRecords = (data || []).map(row => row.record_data).filter(Boolean);
+                localStorage.setItem('clinical_records', JSON.stringify(cloudRecords));
+                if (typeof renderRecordsTable === 'function') renderRecordsTable();
+            } catch (error) {
+                console.error('Cloud record retrieval failed:', error);
+                showToast('無法從雲端讀取紀錄，暫時顯示本機紀錄。', 'error');
+            }
+        }
+
+        function renderRecordsTable() {
+            const records = getStoredRecords();
+            const search = document.getElementById('record-search').value.toLowerCase();
+            const tpFilter = document.getElementById('record-timepoint-filter').value;
+            const tbody = document.getElementById('records-table-body');
+            const noMsg = document.getElementById('no-records-msg');
+
+            const filtered = records.filter(r => {
+                const matchSearch = r.name.toLowerCase().includes(search) || r.id.toLowerCase().includes(search);
+                const matchTp = !tpFilter || r.timepoint === tpFilter;
+                return matchSearch && matchTp;
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '';
+                noMsg.classList.remove('hidden');
+                return;
+            }
+            noMsg.classList.add('hidden');
+
+            const tpMap = { 'Pre-exercise': '運動前', 'Post-5-weeks-exercise': '五星期運動後', '6-Months-after': '六個月後' };
+            let html = '';
+            filtered.forEach((r) => {
+                html += `<tr class="hover:bg-slate-50 transition">
+                    <td class="p-3 font-medium text-slate-900">${r.name}<br><span class="text-xs text-slate-400">ID: ${r.id}</span></td>
+                    <td class="p-3 text-slate-600">${r.date}</td>
+                    <td class="p-3"><span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-teal-50 text-teal-800 border border-teal-200">${tpMap[r.timepoint] || r.timepoint}</span></td>
+                    <td class="p-3 font-bold text-teal-700">${r.ndi.percentage}%</td>
+                    <td class="p-3">${r.dash.score}</td>
+                    <td class="p-3">${r.sf12.pcs} / ${r.sf12.mcs}</td>
+                    <td class="p-3">${r.tsk.score} / 68</td>
+                    <td class="p-3">${r.see.mean}</td>
+                    <td class="p-3 text-right">
+                        <button onclick="loadRecord('${r.id}', '${r.timepoint}')" class="text-teal-600 hover:text-teal-800 font-medium px-2 py-1 rounded bg-teal-50 mr-1">檢視</button>
+                        <button type="button" class="delete-record-btn text-rose-600 hover:text-rose-800 font-medium px-2 py-1 rounded bg-rose-50" data-record-id="${encodeURIComponent(r.id)}" data-record-timepoint="${encodeURIComponent(r.timepoint)}">刪除</button>
+                    </td>
+                </tr>`;
+            });
+            tbody.innerHTML = html;
+
+            // Attach the delete action directly after each table refresh.
+            // This avoids relying on event delegation for dynamically created buttons.
+            tbody.querySelectorAll('.delete-record-btn').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const id = decodeURIComponent(this.getAttribute('data-record-id') || '');
+                    const timepoint = decodeURIComponent(this.getAttribute('data-record-timepoint') || '');
+                    deleteRecord(id, timepoint);
+                });
+            });
+        }
+
+        let pendingDeleteRecord = null;
+
+        function openDeleteConfirmModal(id, timepoint) {
+            const records = getStoredRecords();
+            const record = records.find(r => r.id === id && r.timepoint === timepoint);
+            if (!record) return;
+
+            const tpMap = {
+                'Pre-exercise': '運動前',
+                'Post-5-weeks-exercise': '五星期運動後',
+                '6-Months-after': '六個月後'
+            };
+            pendingDeleteRecord = { id, timepoint };
+            document.getElementById('delete-confirm-name').textContent = record.name || '';
+            document.getElementById('delete-confirm-id').textContent = record.id || '';
+            document.getElementById('delete-confirm-timepoint').textContent = tpMap[timepoint] || timepoint || '';
+
+            const modal = document.getElementById('delete-confirm-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.getElementById('delete-confirm-ok').focus();
+        }
+
+        function closeDeleteConfirmModal() {
+            const modal = document.getElementById('delete-confirm-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            pendingDeleteRecord = null;
+        }
+
+        async function confirmDeleteRecord() {
+            if (!pendingDeleteRecord) return;
+            const { id, timepoint } = pendingDeleteRecord;
+            const records = getStoredRecords();
+            const record = records.find(r => r.id === id && r.timepoint === timepoint);
+            if (!record) { closeDeleteConfirmModal(); return; }
+            try {
+                if (CLOUD_ENABLED) {
+                    const { error } = await supabaseClient.from(CLOUD_TABLE).delete()
+                        .eq('participant_id', id).eq('timepoint', timepoint);
+                    if (error) throw error;
+                }
+                const updatedRecords = records.filter(r => !(r.id === id && r.timepoint === timepoint));
+                localStorage.setItem('clinical_records', JSON.stringify(updatedRecords));
+                closeDeleteConfirmModal();
+                renderRecordsTable();
+                showToast(CLOUD_ENABLED ? '已刪除雲端紀錄' : '已刪除指定紀錄', 'success');
+            } catch (error) {
+                console.error('Delete record failed:', error);
+                showToast('刪除紀錄失敗，請稍後再試。', 'error');
+            }
+        }
+
+        function deleteRecord(id, timepoint) {
+            openDeleteConfirmModal(id, timepoint);
+        }
+
+        function openClearAllConfirmModal() {
+            const modal = document.getElementById('clear-all-confirm-modal');
+            if (!modal) return;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.getElementById('clear-all-confirm-ok')?.focus();
+        }
+
+        function closeClearAllConfirmModal() {
+            const modal = document.getElementById('clear-all-confirm-modal');
+            if (!modal) return;
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        async function confirmClearAllRecords() {
+            try {
+                if (CLOUD_ENABLED) {
+                    const { error } = await supabaseClient.from(CLOUD_TABLE).delete().not('participant_id', 'is', null);
+                    if (error) throw error;
+                }
+                localStorage.removeItem('clinical_records');
+                closeClearAllConfirmModal();
+                renderRecordsTable();
+                showToast(CLOUD_ENABLED ? '已清除全部雲端紀錄' : '已清除全部紀錄', 'success');
+            } catch (error) {
+                console.error('Clear all records failed:', error);
+                showToast('清除全部紀錄失敗，請稍後再試。', 'error');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('delete-confirm-cancel')?.addEventListener('click', closeDeleteConfirmModal);
+            document.getElementById('delete-confirm-ok')?.addEventListener('click', confirmDeleteRecord);
+            document.getElementById('delete-confirm-modal')?.addEventListener('click', function(e) {
+                if (e.target === this) closeDeleteConfirmModal();
+            });
+            document.getElementById('clear-all-confirm-cancel')?.addEventListener('click', closeClearAllConfirmModal);
+            document.getElementById('clear-all-confirm-ok')?.addEventListener('click', confirmClearAllRecords);
+            refreshRecordsFromCloud();
+            document.getElementById('clear-all-confirm-modal')?.addEventListener('click', function(e) {
+                if (e.target === this) closeClearAllConfirmModal();
+            });
+            document.addEventListener('keydown', function(e) {
+                const deleteModal = document.getElementById('delete-confirm-modal');
+                const clearAllModal = document.getElementById('clear-all-confirm-modal');
+                if (e.key === 'Escape') {
+                    if (deleteModal && !deleteModal.classList.contains('hidden')) closeDeleteConfirmModal();
+                    if (clearAllModal && !clearAllModal.classList.contains('hidden')) closeClearAllConfirmModal();
+                }
+            });
+        });
+
+        function clearAllRecords() {
+            openClearAllConfirmModal();
+        }
+
+        function loadRecord(id, timepoint) {
+            const records = getStoredRecords();
+            const rec = records.find(r => r.id === id && r.timepoint === timepoint);
+            if (!rec) return;
+
+            document.getElementById('participant-name').value = rec.name;
+            document.getElementById('participant-id').value = rec.id;
+            document.getElementById('assessment-date').value = rec.date;
+            selectTimepoint(rec.timepoint);
+
+            // Restore the exact participant responses before displaying the summary.
+            // The summary is calculated from the form controls, so loading only the
+            // demographic fields would otherwise produce results that differ from
+            // the stored/exported record.
+            const restoreRadio = (name, value) => {
+                if (value === null || value === undefined || value === '') return;
+                const el = document.querySelector(`input[name="${name}"][value="${value}"]`);
+                if (el) el.checked = true;
+            };
+
+            (rec.ndi?.details || []).forEach((d, i) => restoreRadio(`ndi_${i}`, d.score));
+            (rec.dash?.details || []).forEach((d, i) => restoreRadio(`dash_${i}`, d.score));
+            (rec.sf12?.details || []).forEach((d, i) => restoreRadio(`sf12_${i}`, d.score));
+            (rec.tsk?.details || []).forEach((d, i) => restoreRadio(`tsk_${i}`, d.rawScore ?? d.score));
+            (rec.see?.details || []).forEach((d, i) => restoreRadio(`see_${i}`, d.score));
+
+            switchTab(6);
+            showToast(`已載入個案 ${rec.name} (${timepoint}) 總結`, 'success');
+        }
+
+        function exportAllExcel() {
+            // Export follows the timepoint currently selected in the History filter.
+            // Blank filter = all timepoints; a specific filter = only that timepoint.
+            const allRecords = getStoredRecords();
+            const tpFilterEl = document.getElementById('record-timepoint-filter');
+            const tpFilter = tpFilterEl ? tpFilterEl.value : '';
+
+            const records = tpFilter
+                ? allRecords.filter(r => r.timepoint === tpFilter)
+                : allRecords;
+
+            if (allRecords.length === 0) {
+                showToast('目前沒有可匯出的紀錄！', 'error');
+                return;
+            }
+
+            if (records.length === 0) {
+                showToast('目前選取的時間點沒有可匯出的紀錄！', 'error');
+                return;
+            }
+
+            const tpMap = {
+                'Pre-exercise': '運動前',
+                'Post-5-weeks-exercise': '五星期運動後',
+                '6-Months-after': '六個月後'
+            };
+            const exportScopeLabel = tpFilter ? tpMap[tpFilter] || tpFilter : '全部時間點';
+
+            // Return the exact answer text corresponding to a stored response.
+            function getAnswerText(scale, index, detail) {
+                if (detail == null) return '';
+
+                if (scale === 'NDI') {
+                    if (detail.score === 'NA') {
+                        return `N/A: 不適用 (我不駕駛 / 開車)`;
+                    }
+                    const code = Number(detail.score);
+                    return Number.isInteger(code) && ndiQuestions[index]
+                        ? `${code}: ${ndiQuestions[index].options[code] || ''}`
+                        : '';
+                }
+
+                if (scale === 'DASH') {
+                    const code = Number(detail.score);
+                    return Number.isInteger(code) && code >= 1 && code <= 5
+                        ? `${code}: ${dashOptions[code - 1] || ''}`
+                        : '';
+                }
+
+                if (scale === 'SF12') {
+                    const code = Number(detail.score);
+                    return Number.isInteger(code) && code >= 1 && sf12Questions[index]
+                        ? `${code}: ${sf12Questions[index].options[code - 1] || ''}`
+                        : '';
+                }
+
+                if (scale === 'TSK') {
+                    const raw = detail.rawScore;
+                    return raw == null
+                        ? ''
+                        : `${raw}: ${tskOptions[raw - 1] || ''}`;
+                }
+
+                if (scale === 'SEE') {
+                    const code = Number(detail.score);
+                    return Number.isInteger(code) && code >= 0 && code <= 10
+                        ? `${code}: ${code}`
+                        : '';
+                }
+
+                return '';
+            }
+
+            // First worksheet: one row per participant/timepoint with all questionnaire results.
+            const summaryData = records.map(r => ({
+                "姓名 (Name)": r.name,
+                "編號 (ID)": r.id,
+                "評估日期 (Date)": r.date,
+                "評估時間點 (Timepoint)": r.timepoint,
+                "NDI (%)": r.ndi?.percentage ?? '',
+                "NDI Raw (依已回答題數計算)": r.ndi?.raw ?? '',
+                "DASH Score": r.dash?.score ?? '',
+                "SF-12 PCS": r.sf12?.pcs ?? '',
+                "SF-12 MCS": r.sf12?.mcs ?? '',
+                "TSK-17 Score (/68)": r.tsk?.score ?? '',
+                "SEE Mean (/10)": r.see?.mean ?? ''
+            }));
+
+            // Build one detailed worksheet per questionnaire.
+            function buildQuestionnaireRows(scale, questionCount, getQuestionText, getDetails, extraFields) {
+                const rows = [];
+
+                records.forEach(r => {
+                    const details = getDetails(r) || [];
+
+                    for (let i = 0; i < questionCount; i++) {
+                        const d = details[i] || {};
+                        const row = {
+                            "姓名 (Name)": r.name,
+                            "編號 (ID)": r.id,
+                            "評估日期 (Date)": r.date,
+                            "評估時間點 (Timepoint)": r.timepoint,
+                            "題號 (Question No.)": i + 1,
+                            "問題 (Question)": getQuestionText(i),
+                            "答案 (Answer)": getAnswerText(scale, i, d)
+                        };
+
+                        if (typeof extraFields === 'function') {
+                            Object.assign(row, extraFields(d));
+                        }
+
+                        rows.push(row);
+                    }
+                });
+
+                return rows;
+            }
+
+            const ndiData = buildQuestionnaireRows(
+                'NDI',
+                ndiQuestions.length,
+                i => ndiQuestions[i]?.title || `Question ${i + 1}`,
+                r => r.ndi?.details,
+                d => ({ "Score": d.score ?? '' })
+            );
+
+            const dashData = buildQuestionnaireRows(
+                'DASH',
+                dashQuestions.length,
+                i => dashQuestions[i]?.text || `Question ${i + 1}`,
+                r => r.dash?.details,
+                d => ({ "Score": d.score ?? '' })
+            );
+
+            const sf12Data = buildQuestionnaireRows(
+                'SF12',
+                sf12Questions.length,
+                i => sf12Questions[i]?.text || `Item ${i + 1}`,
+                r => r.sf12?.details,
+                d => ({ "Code / Score": d.score ?? '' })
+            );
+
+            const tskData = buildQuestionnaireRows(
+                'TSK',
+                tskQuestions.length,
+                i => tskQuestions[i] || `Question ${i + 1}`,
+                r => r.tsk?.details,
+                d => ({
+                    "Raw Answer": d.rawScore ?? '',
+                    "Scored Value": d.score ?? ''
+                })
+            );
+
+            const seeData = buildQuestionnaireRows(
+                'SEE',
+                seeQuestions.length,
+                i => seeQuestions[i] || `Question ${i + 1}`,
+                r => r.see?.details,
+                d => ({ "Score": d.score ?? '' })
+            );
+
+            const fileDate = new Date().toISOString().split('T')[0];
+
+            try {
+                if (typeof XLSX !== 'undefined' && XLSX.utils && XLSX.write) {
+                    const workbook = XLSX.utils.book_new();
+
+                    const appendSheet = (data, sheetName, widths) => {
+                        const sheet = XLSX.utils.json_to_sheet(data);
+                        if (widths) sheet['!cols'] = widths.map(w => ({ wch: w }));
+                        XLSX.utils.book_append_sheet(workbook, sheet, sheetName);
+                    };
+
+                    // Summary MUST be the first worksheet.
+                    appendSheet(summaryData, 'Summary', [18, 16, 15, 20, 12, 15, 14, 13, 13, 18, 15]);
+                    appendSheet(ndiData, 'NDI Details', [18, 16, 15, 20, 10, 55, 55, 10]);
+                    appendSheet(dashData, 'DASH Details', [18, 16, 15, 20, 10, 55, 55, 10]);
+                    appendSheet(sf12Data, 'SF-12 Details', [18, 16, 15, 20, 10, 65, 55, 14]);
+                    appendSheet(tskData, 'TSK Details', [18, 16, 15, 20, 10, 65, 55, 14, 14]);
+                    appendSheet(seeData, 'SEE Details', [18, 16, 15, 20, 10, 65, 20, 10]);
+
+                    const excelBytes = XLSX.write(workbook, {
+                        bookType: 'xlsx',
+                        type: 'array'
+                    });
+
+                    const blob = new Blob([excelBytes], {
+                        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                    });
+                    const url = URL.createObjectURL(blob);
+                    const downloadAnchor = document.createElement('a');
+                    downloadAnchor.href = url;
+                    downloadAnchor.download = `clinical_outcomes_export_${tpFilter || 'all-timepoints'}_${fileDate}.xlsx`;
+                    downloadAnchor.style.display = 'none';
+                    document.body.appendChild(downloadAnchor);
+                    downloadAnchor.click();
+                    downloadAnchor.remove();
+                    setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+                    showToast(`Excel 檔案已成功匯出：${exportScopeLabel}（Summary + 5 個問卷明細工作表）。`, 'success');
+                    return;
+                }
+
+                // Fallback: generate an Excel-readable SpreadsheetML workbook
+                // with the same six worksheets if SheetJS is unavailable.
+                const xmlEscape = value => String(value ?? '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&apos;');
+
+                const makeWorksheet = (name, rows) => {
+                    if (!rows.length) {
+                        return `<Worksheet ss:Name="${xmlEscape(name)}"><Table><Row><Cell><Data ss:Type="String"></Data></Cell></Row></Table></Worksheet>`;
+                    }
+
+                    const headers = Object.keys(rows[0]);
+                    const header = `<Row>${headers.map(h =>
+                        `<Cell><Data ss:Type="String">${xmlEscape(h)}</Data></Cell>`
+                    ).join('')}</Row>`;
+
+                    const body = rows.map(row =>
+                        `<Row>${headers.map(h => {
+                            const value = row[h] ?? '';
+                            const type = (typeof value === 'number' && Number.isFinite(value)) ? 'Number' : 'String';
+                            return `<Cell><Data ss:Type="${type}">${xmlEscape(value)}</Data></Cell>`;
+                        }).join('')}</Row>`
+                    ).join('');
+
+                    return `<Worksheet ss:Name="${xmlEscape(name)}"><Table>${header}${body}</Table></Worksheet>`;
+                };
+
+                const workbookXml = `<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+          xmlns:o="urn:schemas-microsoft-com:office:office"
+          xmlns:x="urn:schemas-microsoft-com:office:excel"
+          xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+          xmlns:html="http://www.w3.org/TR/REC-html40">
+    <WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">
+        <ProtectContents>False</ProtectContents>
+        <ProtectObjects>False</ProtectObjects>
+        <ProtectScenarios>False</ProtectScenarios>
+    </WorksheetOptions>
+    ${makeWorksheet('Summary', summaryData)}
+    ${makeWorksheet('NDI Details', ndiData)}
+    ${makeWorksheet('DASH Details', dashData)}
+    ${makeWorksheet('SF-12 Details', sf12Data)}
+    ${makeWorksheet('TSK Details', tskData)}
+    ${makeWorksheet('SEE Details', seeData)}
+</Workbook>`;
+
+                const fallbackBlob = new Blob([workbookXml], {
+                    type: 'application/vnd.ms-excel;charset=utf-8'
+                });
+                const fallbackUrl = URL.createObjectURL(fallbackBlob);
+                const fallbackAnchor = document.createElement('a');
+                fallbackAnchor.href = fallbackUrl;
+                fallbackAnchor.download = `clinical_outcomes_export_${tpFilter || 'all-timepoints'}_${fileDate}.xls`;
+                fallbackAnchor.style.display = 'none';
+                document.body.appendChild(fallbackAnchor);
+                fallbackAnchor.click();
+                fallbackAnchor.remove();
+                setTimeout(() => URL.revokeObjectURL(fallbackUrl), 1000);
+
+                showToast(`Excel 相容檔案已成功匯出：${exportScopeLabel}（Summary + 5 個問卷明細工作表）。`, 'success');
+            } catch (error) {
+                console.error('Excel export failed:', error);
+                showToast('Excel 匯出失敗，請重新載入頁面後再試。', 'error');
+            }
+        }
+
+        function openAssessorModal() {
+            document.getElementById('assessor-modal').classList.remove('hidden');
+            document.getElementById('assessor-password-input').focus();
+        }
+
+        function closeAssessorModal() {
+            document.getElementById('assessor-modal').classList.add('hidden');
+            document.getElementById('assessor-password-input').value = '';
+        }
+
+        function openChangeAssessorPasswordModal() {
+            if (!isAssessorMode) {
+                showToast('請先解鎖評估員模式。', 'error');
+                return;
+            }
+            document.getElementById('change-assessor-password-modal').classList.remove('hidden');
+            document.getElementById('master-password-input').focus();
+        }
+
+        function closeChangeAssessorPasswordModal() {
+            document.getElementById('change-assessor-password-modal').classList.add('hidden');
+            document.getElementById('master-password-input').value = '';
+            document.getElementById('new-assessor-password-input').value = '';
+            document.getElementById('confirm-assessor-password-input').value = '';
+        }
+
+        function changeAssessorPassword() {
+            const masterPassword = document.getElementById('master-password-input').value;
+            const newPassword = document.getElementById('new-assessor-password-input').value;
+            const confirmPassword = document.getElementById('confirm-assessor-password-input').value;
+
+            // The old assessor password is intentionally not requested.
+            if (masterPassword !== 'Sharon Tsang') {
+                showToast('Master 密碼錯誤，無法更改評估員密碼。', 'error');
+                return;
+            }
+            if (!newPassword) {
+                showToast('請輸入新的評估員密碼。', 'error');
+                document.getElementById('new-assessor-password-input').focus();
+                return;
+            }
+            if (newPassword !== confirmPassword) {
+                showToast('兩次輸入的新密碼不一致。', 'error');
+                document.getElementById('confirm-assessor-password-input').focus();
+                return;
+            }
+
+            localStorage.setItem('assessor_password', newPassword);
+            closeChangeAssessorPasswordModal();
+            showToast('評估員密碼已成功更新。', 'success');
+        }
+
+        function verifyAssessorPassword() {
+            const pwd = document.getElementById('assessor-password-input').value;
+            const storedPassword = localStorage.getItem('assessor_password') || 'admin123';
+            if (pwd === storedPassword) {
+                isAssessorMode = true;
+                closeAssessorModal();
+                document.getElementById('assessor-banner').classList.remove('hidden');
+                document.getElementById('participant-banner').classList.add('hidden');
+                document.getElementById('mode-label').innerText = '評估員模式';
+                document.getElementById('toggle-assessor-btn').classList.add('hidden');
+                document.getElementById('logout-assessor-btn').classList.remove('hidden');
+                document.getElementById('tab-btn-6').classList.remove('hidden');
+                document.getElementById('tab-btn-history').classList.remove('hidden');
+                showToast('成功解鎖評估員模式！', 'success');
+            } else {
+                showToast('密碼錯誤，請重新輸入', 'error');
+            }
+        }
+
+        function logoutAssessor() {
+            isAssessorMode = false;
+            document.getElementById('assessor-banner').classList.add('hidden');
+            document.getElementById('participant-banner').classList.remove('hidden');
+            document.getElementById('mode-label').innerText = '參加者模式';
+            document.getElementById('toggle-assessor-btn').classList.remove('hidden');
+            document.getElementById('logout-assessor-btn').classList.add('hidden');
+            document.getElementById('tab-btn-6').classList.add('hidden');
+            document.getElementById('tab-btn-history').classList.add('hidden');
+            if(currentTab === 6 || currentTab === 'history') switchTab(0);
+            showToast('已安全鎖定評估員模式', 'success');
+        }
+
+        function toggleElement(id) {
+            const el = document.getElementById(id);
+            if(el) el.classList.toggle('hidden');
+        }
+
+        // Allow Enter to submit the active assessor-password dialog.
+        document.addEventListener('keydown', function(event) {
+            if (event.key !== 'Enter') return;
+
+            const loginModal = document.getElementById('assessor-modal');
+            const changeModal = document.getElementById('change-assessor-password-modal');
+
+            if (loginModal && !loginModal.classList.contains('hidden')) {
+                verifyAssessorPassword();
+            } else if (changeModal && !changeModal.classList.contains('hidden')) {
+                changeAssessorPassword();
+            }
+        });
+
+        // Robust initialisation: render questionnaires immediately after all functions are defined.
+        // This complements window.onload and prevents blank questionnaire containers if load is delayed.
+        (function initialiseQuestionnaires() {
+            try {
+                renderNDI();
+                renderDASH();
+                renderSF12();
+                renderTSK();
+                renderSEE();
+                updateTabUI();
+            } catch (error) {
+                console.error('Questionnaire initialisation failed:', error);
+            }
+        })();
+
+        let toastTimer = null;
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast-notification');
+            const msg = document.getElementById('toast-message');
+            const icon = document.getElementById('toast-icon');
+            if (!toast || !msg || !icon) return;
+
+            msg.innerText = message;
+            if(type === 'error') {
+                icon.className = "fa-solid fa-triangle-exclamation text-rose-400 text-lg";
+            } else {
+                icon.className = "fa-solid fa-circle-check text-teal-400 text-lg";
+            }
+
+            if (toastTimer) clearTimeout(toastTimer);
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toastTimer = setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+                toastTimer = null;
+            }, 5000);
+        }
+    </script>
+
+<script id="clinical-platform-layout-guard-v8">
+(function () {
+    function clampCompletionBars() {
+        document.querySelectorAll('progress').forEach(function (el) {
+            el.style.maxWidth = '100%';
+            el.style.boxSizing = 'border-box';
+        });
+
+        document.querySelectorAll(
+            '.progress-track, .completion-track, .progress-container'
+        ).forEach(function (track) {
+            track.style.overflow = 'hidden';
+            track.style.boxSizing = 'border-box';
+            track.style.maxWidth = '100%';
+
+            Array.from(track.children).forEach(function (fill) {
+                fill.style.boxSizing = 'border-box';
+                fill.style.maxWidth = '100%';
+            });
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', clampCompletionBars);
+    } else {
+        clampCompletionBars();
+    }
+
+    window.addEventListener('resize', clampCompletionBars);
+})();
+</script>
+
+
+<script id="clinical-platform-ndi-progress-guard-v9">
+(function () {
+    function fixNDIProgress() {
+        var selectors = [
+            '.ndi-progress',
+            '.ndi-progress-container',
+            '.ndi-completion',
+            '.ndi-completion-bar',
+            '#ndi-progress',
+            '#ndi-completion'
+        ];
+
+        document.querySelectorAll(selectors.join(',')).forEach(function (track) {
+            track.style.width = '100%';
+            track.style.maxWidth = '100%';
+            track.style.marginLeft = 'auto';
+            track.style.marginRight = 'auto';
+            track.style.boxSizing = 'border-box';
+            track.style.overflow = 'hidden';
+
+            Array.from(track.children).forEach(function (fill) {
+                fill.style.boxSizing = 'border-box';
+                fill.style.maxWidth = '100%';
+                fill.style.left = '0';
+                fill.style.right = 'auto';
+            });
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', fixNDIProgress);
+    } else {
+        fixNDIProgress();
+    }
+
+    window.addEventListener('resize', fixNDIProgress);
+
+    // NDI content/progress is rendered dynamically, so observe DOM changes.
+    var observer = new MutationObserver(fixNDIProgress);
+    observer.observe(document.body, { childList: true, subtree: true });
+})();
+</script>
+
+
+<script id="clinical-platform-v10-layout-guard">
+(function () {
+    function refineClinicalLayout() {
+        var progressSelectors = [
+            '#ndi-progress',
+            '.ndi-progress',
+            '.ndi-progress-container',
+            '.ndi-completion',
+            '.ndi-completion-bar'
+        ];
+
+        document.querySelectorAll(progressSelectors.join(',')).forEach(function (track) {
+            track.style.width = '100%';
+            track.style.maxWidth = window.innerWidth <= 767 ? '100%' : '760px';
+            track.style.marginLeft = 'auto';
+            track.style.marginRight = 'auto';
+            track.style.paddingLeft = '0';
+            track.style.paddingRight = '0';
+            track.style.boxSizing = 'border-box';
+            track.style.overflow = 'hidden';
+
+            Array.from(track.querySelectorAll('[style*="width"]')).forEach(function (fill) {
+                fill.style.marginLeft = '0';
+                fill.style.marginRight = '0';
+                fill.style.transform = 'none';
+                fill.style.maxWidth = '100%';
+                fill.style.boxSizing = 'border-box';
+            });
+        });
+
+        // Normalize count badges by their semantic data/class hooks first.
+        document.querySelectorAll(
+            '.question-count-badge, .question-number-badge, ' +
+            '.subquestion-count-badge, [data-question-count], [data-count-badge]'
+        ).forEach(function (badge) {
+            badge.style.backgroundColor = '#f1f5f9';
+            badge.style.color = '#475569';
+            badge.style.borderColor = '#cbd5e1';
+            badge.style.boxShadow = 'none';
+        });
+
+        // The SF-12 badge may be generated without a semantic class.
+        // Only target a compact circular badge containing the exact count text,
+        // avoiding unrelated green elements elsewhere in the page.
+        document.querySelectorAll('.sf12-item, [id*="sf12"], section').forEach(function (root) {
+            root.querySelectorAll('span, div').forEach(function (el) {
+                var t = (el.textContent || '').trim();
+                if (t === '12 題') {
+                    el.style.backgroundColor = '#f1f5f9';
+                    el.style.color = '#475569';
+                    el.style.borderColor = '#cbd5e1';
+                    el.style.boxShadow = 'none';
+                }
+            });
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', refineClinicalLayout);
+    } else {
+        refineClinicalLayout();
+    }
+
+    window.addEventListener('resize', refineClinicalLayout);
+
+    var observer = new MutationObserver(function () {
+        refineClinicalLayout();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+})();
+</script>
+
+
+
+</body>
+</html>
