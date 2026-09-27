@@ -1,0 +1,159 @@
+from pathlib import Path
+
+p = Path("index.html")
+s = p.read_text()
+if "SUPABASE_AUTH_PATCH_V1" in s:
+    raise SystemExit(0)
+
+old = """<div id="assessor-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-xl border border-slate-200">
+            <h3 class="text-base font-bold text-slate-900 mb-2 flex items-center gap-2">
+                <i class="fa-solid fa-lock text-teal-600"></i>
+                評估員模式解鎖
+            </h3>
+            <p class="text-xs text-slate-500 mb-4">請輸入評估員解鎖密碼以啟用總結報告與歷史資料庫。</p>
+            <input type="password" id="assessor-password-input" placeholder="輸入解鎖密碼..." class="w-full border border-slate-300 rounded-lg p-2.5 text-sm mb-4 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+            <div class="flex justify-end gap-2">
+                <button onclick="closeAssessorModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium px-4 py-2 rounded-lg transition">
+                    取消
+                </button>
+                <button onclick="verifyAssessorPassword()" class="bg-teal-700 hover:bg-teal-800 text-white text-xs font-semibold px-4 py-2 rounded-lg transition">
+                    確認解鎖
+                </button>
+            </div>
+        </div>
+    </div>"""
+new = """<div id="assessor-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-xl border border-slate-200">
+            <h3 class="text-base font-bold text-slate-900 mb-2 flex items-center gap-2"><i class="fa-solid fa-lock text-teal-600"></i>評估員登入</h3>
+            <p class="text-xs text-slate-500 mb-4">使用 Supabase 評估員帳號登入後，才能在不同電腦存取雲端評估紀錄。</p>
+            <label for="assessor-email-input" class="block text-xs font-semibold text-slate-700 mb-1.5">評估員 Email</label>
+            <input type="email" id="assessor-email-input" autocomplete="username" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm mb-3 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+            <label for="assessor-password-input" class="block text-xs font-semibold text-slate-700 mb-1.5">密碼</label>
+            <input type="password" id="assessor-password-input" placeholder="輸入 Supabase 帳號密碼..." autocomplete="current-password" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm mb-4 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+            <div class="flex justify-end gap-2">
+                <button onclick="closeAssessorModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium px-4 py-2 rounded-lg transition">取消</button>
+                <button onclick="signUpAssessor()" class="bg-slate-700 hover:bg-slate-800 text-white text-xs font-semibold px-4 py-2 rounded-lg transition">建立帳號</button>
+                <button onclick="verifyAssessorPassword()" class="bg-teal-700 hover:bg-teal-800 text-white text-xs font-semibold px-4 py-2 rounded-lg transition">登入</button>
+            </div>
+        </div>
+    </div>"""
+if old not in s:
+    raise SystemExit("assessor modal not found")
+s = s.replace(old, new)
+
+a = s.index("        function changeAssessorPassword()")
+b = s.index("        function toggleElement(id)", a)
+funcs = """        function setAssessorModeUI(loggedIn) {
+            isAssessorMode = !!loggedIn;
+            const hide = !loggedIn;
+            document.getElementById('assessor-banner')?.classList.toggle('hidden', hide);
+            document.getElementById('participant-banner')?.classList.toggle('hidden', !hide);
+            if (document.getElementById('mode-label')) document.getElementById('mode-label').innerText = loggedIn ? '評估員模式' : '參加者模式';
+            document.getElementById('toggle-assessor-btn')?.classList.toggle('hidden', loggedIn);
+            document.getElementById('logout-assessor-btn')?.classList.toggle('hidden', !loggedIn);
+            document.getElementById('tab-btn-6')?.classList.toggle('hidden', !loggedIn);
+            document.getElementById('tab-btn-history')?.classList.toggle('hidden', !loggedIn);
+            if (!loggedIn && (currentTab === 6 || currentTab === 'history')) switchTab(0);
+        }
+
+        async function verifyAssessorPassword() {
+            if (!supabaseClient) return showToast('雲端服務尚未設定。', 'error');
+            const email = document.getElementById('assessor-email-input').value.trim().toLowerCase();
+            const password = document.getElementById('assessor-password-input').value;
+            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+            if (error) return showToast('登入失敗：' + error.message, 'error');
+            setAssessorModeUI(true);
+            closeAssessorModal();
+            await refreshRecordsFromCloud();
+            showToast('評估員登入成功，已連線至雲端資料庫。', 'success');
+        }
+
+        async function signUpAssessor() {
+            if (!supabaseClient) return showToast('雲端服務尚未設定。', 'error');
+            const email = document.getElementById('assessor-email-input').value.trim().toLowerCase();
+            const password = document.getElementById('assessor-password-input').value;
+            if (!email) return showToast('請輸入 Email。', 'error');
+            if (password.length < 8) return showToast('請設定至少 8 個字元的密碼。', 'error');
+            const redirectTo = window.location.origin + window.location.pathname;
+            const { data, error } = await supabaseClient.auth.signUp({ email, password, options: { emailRedirectTo: redirectTo } });
+            if (error) return showToast('建立帳號失敗：' + error.message, 'error');
+            if (data?.session) {
+                setAssessorModeUI(true);
+                closeAssessorModal();
+                await refreshRecordsFromCloud();
+                showToast('評估員帳號已建立並登入。', 'success');
+            } else {
+                showToast('帳號已建立。請先完成 Email 驗證，再回來登入。', 'success');
+            }
+        }
+
+        function changeAssessorPassword() {
+            showToast('評估員密碼現在由 Supabase Auth 管理。', 'success');
+            closeChangeAssessorPasswordModal();
+        }
+
+        async function logoutAssessor() {
+            if (supabaseClient) await supabaseClient.auth.signOut();
+            setAssessorModeUI(false);
+            showToast('已安全登出評估員模式', 'success');
+        }
+
+"""
+s = s[:a] + funcs + s[b:]
+
+ss = s.index("        async function saveCurrentAssessment()")
+se = s.index("        function getStoredRecords()", ss)
+save = """        async function saveCurrentAssessment() {
+            try {
+                if (CLOUD_ENABLED && supabaseClient) {
+                    const { data: { user } } = await supabaseClient.auth.getUser();
+                    if (!user) {
+                        showToast('請先登入評估員帳號，才能將評估資料儲存至雲端。', 'error');
+                        openAssessorModal();
+                        return false;
+                    }
+                }
+                const res = calculateScores();
+                let records = JSON.parse(localStorage.getItem('clinical_records') || '[]');
+                const existingIdx = records.findIndex(r => r.id === res.id && r.timepoint === res.timepoint);
+                if (existingIdx >= 0) records[existingIdx] = res; else records.push(res);
+                localStorage.setItem('clinical_records', JSON.stringify(records));
+                if (CLOUD_ENABLED && supabaseClient) {
+                    const { error } = await supabaseClient.from(CLOUD_TABLE).upsert({
+                        participant_id: res.id, timepoint: res.timepoint, record_data: res,
+                        updated_at: new Date().toISOString()
+                    }, { onConflict: 'participant_id,timepoint' });
+                    if (error) throw error;
+                    showToast('評估資料已成功儲存至雲端。', 'success');
+                } else {
+                    showToast('評估資料已成功儲存於本機。', 'success');
+                }
+                return true;
+            } catch (error) {
+                console.error('Save assessment failed:', error);
+                showToast('雲端資料儲存失敗：' + (error.message || '請確認已登入評估員帳號。'), 'error');
+                return false;
+            }
+        }
+
+"""
+s = s[:ss] + save + s[se:]
+
+marker = "            refreshRecordsFromCloud();"
+pos = s.index(marker)
+authinit = """            if (CLOUD_ENABLED && supabaseClient) {
+                supabaseClient.auth.getSession().then(async ({ data }) => {
+                    setAssessorModeUI(!!data.session);
+                    if (data.session) await refreshRecordsFromCloud();
+                });
+                supabaseClient.auth.onAuthStateChange(async (_event, session) => {
+                    setAssessorModeUI(!!session);
+                    if (session) await refreshRecordsFromCloud();
+                });
+            } else {
+                setAssessorModeUI(false);
+            }"""
+s = s[:pos] + authinit + s[pos+len(marker):]
+s = s.replace("        // --- Cloud database configuration ---", "        // SUPABASE_AUTH_PATCH_V1\n        // --- Cloud database configuration ---", 1)
+p.write_text(s)
