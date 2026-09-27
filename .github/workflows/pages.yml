@@ -24,9 +24,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Apply Supabase Auth patch
-        run: python scripts/patch_auth.py
-
       - name: Setup Pages
         uses: actions/configure-pages@v6
 
