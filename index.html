@@ -2947,7 +2947,7 @@ progress {
             if (CLOUD_ENABLED && supabaseClient) {
                 const storedPassword = sessionStorage.getItem('clinical_assessor_password');
                 setAssessorModeUI(!!storedPassword);
-                if (storedPassword) await refreshRecordsFromCloud();
+                if (storedPassword) refreshRecordsFromCloud();
             } else {
                 setAssessorModeUI(false);
             }
