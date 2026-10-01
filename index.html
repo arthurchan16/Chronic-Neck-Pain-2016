@@ -1014,6 +1014,7 @@ progress {
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased font-size-normal">
 
     <header class="bg-slate-900 text-white shadow-md sticky top-0 z-40 no-print">
+        <button id="language-switch-btn" type="button" aria-label="Switch language" title="繁體中文 / English" style="position:fixed;top:76px;right:16px;z-index:99999;display:block;visibility:visible;opacity:1;background:#0f766e;color:#fff;border:2px solid #5eead4;border-radius:10px;padding:10px 16px;font-size:14px;font-weight:700;line-height:1.2;box-shadow:0 4px 14px rgba(0,0,0,.35);cursor:pointer;">English</button>
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <div class="flex items-center space-x-3">
                 <div class="bg-teal-600 text-white p-2 rounded-lg font-bold text-xl flex items-center justify-center w-10 h-10 shadow-sm">
@@ -3938,16 +3939,21 @@ progress {
       if (btn) btn.textContent = language === 'en' ? '繁體中文' : 'English';
     }
     function addButton() {
-      if (document.getElementById('language-switch-btn')) return;
-      var button = document.createElement('button');
-      button.id = 'language-switch-btn';
-      button.type = 'button';
+      var button = document.getElementById('language-switch-btn');
+      if (!button) {
+        button = document.createElement('button');
+        button.id = 'language-switch-btn';
+        button.type = 'button';
+        button.style.cssText = 'position:fixed;top:76px;right:16px;z-index:99999;display:block;visibility:visible;opacity:1;background:#0f766e;color:#fff;border:2px solid #5eead4;border-radius:10px;padding:10px 16px;font-size:14px;font-weight:700;line-height:1.2;box-shadow:0 4px 14px rgba(0,0,0,.35);cursor:pointer;';
+        document.body.appendChild(button);
+      }
       button.textContent = language === 'en' ? '繁體中文' : 'English';
       button.setAttribute('aria-label', 'Switch language');
       button.setAttribute('title', '繁體中文 / English');
-      button.style.cssText = 'position:fixed;top:76px;right:16px;z-index:99999;display:block;visibility:visible;opacity:1;background:#0f766e;color:#fff;border:2px solid #5eead4;border-radius:10px;padding:10px 16px;font-size:14px;font-weight:700;line-height:1.2;box-shadow:0 4px 14px rgba(0,0,0,.35);cursor:pointer;';
-      button.addEventListener('click', applyLanguage);
-      document.body.appendChild(button);
+      if (!button.dataset.languageSwitchBound) {
+        button.addEventListener('click', applyLanguage);
+        button.dataset.languageSwitchBound = 'true';
+      }
       if (language === 'en') {
         document.documentElement.lang = 'en';
         document.title = 'Clinical Assessment Questionnaire Platform - NDI, DASH, SF-12, TSK, PSEQ & SEE Scale';
