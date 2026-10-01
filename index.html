@@ -2880,33 +2880,34 @@ progress {
         }
 
         function renderBreakdowns(res) {
+            const englishUI = localStorage.getItem('clinical_platform_language') === 'en';
             let ndiHtml = `<h4 class="font-bold text-xs text-teal-800 uppercase mb-2">NDI 頸部失能細節</h4><ul class="space-y-1 text-xs text-slate-600">`;
-            res.ndi.details.forEach((d, i) => ndiHtml += `<li><strong>${i+1}. ${d.q}</strong>: 得分 ${d.score}</li>`);
+            res.ndi.details.forEach((d, i) => ndiHtml += `<li><strong>${i+1}. ${d.q}</strong>: ${englishUI ? 'Score' : '得分'} ${d.score}</li>`);
             ndiHtml += `</ul>`;
             document.getElementById('breakdown-ndi-container').innerHTML = ndiHtml;
 
             let dashHtml = `<h4 class="font-bold text-xs text-teal-800 uppercase mb-2">DASH 上肢功能細節</h4><ul class="space-y-1 text-xs text-slate-600">`;
-            res.dash.details.forEach((d, i) => dashHtml += `<li><strong>${i+1}. ${d.q}</strong>: ${d.score} 分</li>`);
+            res.dash.details.forEach((d, i) => dashHtml += `<li><strong>${i+1}. ${d.q}</strong>: ${d.score} ${englishUI ? 'points' : '分'}</li>`);
             dashHtml += `</ul>`;
             document.getElementById('breakdown-dash-container').innerHTML = dashHtml;
 
             let sf12Html = `<h4 class="font-bold text-xs text-teal-800 uppercase mb-2">SF-12 生活品質細節</h4><ul class="space-y-1 text-xs text-slate-600">`;
-            res.sf12.details.forEach((d, i) => sf12Html += `<li><strong>${d.q}</strong>: 選項代碼 ${d.score}</li>`);
+            res.sf12.details.forEach((d, i) => sf12Html += `<li><strong>${d.q}</strong>: ${englishUI ? 'Response code' : '選項代碼'} ${d.score}</li>`);
             sf12Html += `</ul>`;
             document.getElementById('breakdown-sf12-container').innerHTML = sf12Html;
 
             let tskHtml = `<h4 class="font-bold text-xs text-teal-800 uppercase mb-2">TSK 運動恐懼細節</h4><ul class="space-y-1 text-xs text-slate-600">`;
-            res.tsk.details.forEach((d, i) => tskHtml += `<li><strong>${i+1}. ${d.q}</strong>: ${d.score} 分</li>`);
+            res.tsk.details.forEach((d, i) => tskHtml += `<li><strong>${i+1}. ${d.q}</strong>: ${d.score} ${englishUI ? 'points' : '分'}</li>`);
             tskHtml += `</ul>`;
             document.getElementById('breakdown-tsk-container').innerHTML = tskHtml;
 
             let pseqHtml = `<h4 class="font-bold text-xs text-teal-800 uppercase mb-2">PSEQ 疼痛自我效能細節</h4><ul class="space-y-1 text-xs text-slate-600">`;
-            res.pseq.details.forEach((d, i) => pseqHtml += `<li><strong>${i+1}. ${d.q}</strong>: 得分 ${d.score ?? '未作答'}</li>`);
+            res.pseq.details.forEach((d, i) => pseqHtml += `<li><strong>${i+1}. ${d.q}</strong>: ${englishUI ? 'Score' : '得分'} ${d.score ?? (englishUI ? 'Not answered' : '未作答')}</li>`);
             pseqHtml += `</ul>`;
             document.getElementById('breakdown-pseq-container').innerHTML = pseqHtml;
 
             let seeHtml = `<h4 class="font-bold text-xs text-teal-800 uppercase mb-2">SEE 運動自我效能細節</h4><ul class="space-y-1 text-xs text-slate-600">`;
-            res.see.details.forEach((d, i) => seeHtml += `<li><strong>${i+1}. ${d.q}</strong>: ${d.score} 分</li>`);
+            res.see.details.forEach((d, i) => seeHtml += `<li><strong>${i+1}. ${d.q}</strong>: ${d.score} ${englishUI ? 'points' : '分'}</li>`);
             seeHtml += `</ul>`;
             document.getElementById('breakdown-see-container').innerHTML = seeHtml;
         }
