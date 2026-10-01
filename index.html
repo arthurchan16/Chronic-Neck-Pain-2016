@@ -3183,6 +3183,7 @@ progress {
                 }
 
                 if (scale === 'PSEQ') {
+                    if (detail.score === null || detail.score === undefined || detail.score === '') return '';
                     const code = Number(detail.score);
                     return Number.isInteger(code) && code >= 0 && code <= 6 ? `${code}: ${code}` : '';
                 }
@@ -3307,7 +3308,7 @@ progress {
                     };
 
                     // Summary MUST be the first worksheet.
-                    appendSheet(summaryData, 'Summary', [18, 16, 15, 20, 12, 15, 14, 13, 13, 18, 15]);
+                    appendSheet(summaryData, 'Summary', [18, 16, 15, 20, 12, 15, 14, 13, 13, 18, 15, 15]);
                     appendSheet(ndiData, 'NDI Details', [18, 16, 15, 20, 10, 55, 55, 10]);
                     appendSheet(dashData, 'DASH Details', [18, 16, 15, 20, 10, 55, 55, 10]);
                     appendSheet(sf12Data, 'SF-12 Details', [18, 16, 15, 20, 10, 65, 55, 14]);
