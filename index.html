@@ -2202,7 +2202,7 @@ progress {
                 html += `<div class="p-4 rounded-xl border border-slate-200 bg-slate-50/50 pseq-item" data-index="${qIdx}">
                     <p class="text-xs sm:text-sm font-bold text-slate-800 mb-3">${qIdx + 1}. ${qText}</p>
                     <div class="pseq-scale-options">`;
-                for (let i = 0; i <= 7; i++) {
+                for (let i = 0; i <= 6; i++) {
                     html += `<label class="see-scale-option" for="pseq_${qIdx}_${i}" aria-label="${i} 分">
                         <input type="radio" id="pseq_${qIdx}_${i}" name="pseq_${qIdx}" value="${i}" onchange="updateSectionProgress('pseq', 10); clearQuestionHighlight('pseq', ${qIdx})">
                         <span class="font-black text-base">${i}</span>
