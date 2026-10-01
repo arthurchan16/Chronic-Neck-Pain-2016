@@ -465,13 +465,29 @@ table {
     }
 
     nav.no-print > div {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+        gap: 2px !important;
     }
 
     nav.no-print button {
-        min-height: 44px;
-        font-size: 12px !important;
-        padding: 8px 5px !important;
+        min-height: 40px;
+        font-size: 10px !important;
+        padding: 6px 1px !important;
+        gap: 2px !important;
+        white-space: nowrap;
+        overflow: hidden;
+    }
+
+    nav.no-print button span:first-child {
+        width: 16px !important;
+        height: 16px !important;
+        font-size: 9px !important;
+    }
+
+    nav.no-print button span:last-child {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .tab-content {
@@ -482,10 +498,6 @@ table {
         padding: 16px !important;
     }
 
-    #step-1 {
-        padding: 16px !important;
-    }
-
     .dash-option {
         min-height: 66px !important;
     }
@@ -493,7 +505,19 @@ table {
 
 @media (max-width: 420px) {
     nav.no-print > div {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+        gap: 1px !important;
+    }
+
+    nav.no-print button {
+        padding: 5px 0 !important;
+        font-size: 9px !important;
+    }
+
+    nav.no-print button span:first-child {
+        width: 14px !important;
+        height: 14px !important;
+        font-size: 8px !important;
     }
 }
 
