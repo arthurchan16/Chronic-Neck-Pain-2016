@@ -2322,7 +2322,10 @@ progress {
             const bar = document.getElementById(`${prefix}-progress-bar`);
             const text = document.getElementById(`${prefix}-progress-text`);
             if (bar) bar.style.width = `${percent}%`;
-            if (text) text.innerText = `${percent}% 完成 (${answeredRequired}/${requiredCount} 題)`;
+            if (text) {
+                const isEnglish = localStorage.getItem('clinical_platform_language') === 'en';
+                text.innerText = isEnglish ? `${percent}% Complete (${answeredRequired}/${requiredCount} questions)` : `${percent}% 完成 (${answeredRequired}/${requiredCount} 題)`;
+            }
             
         }
 
@@ -2841,7 +2844,8 @@ progress {
             document.getElementById('summary-patient-name').innerText = res.name;
             document.getElementById('summary-patient-id').innerText = res.id;
             document.getElementById('summary-date').innerText = res.date;
-            const tpMap = { 'Pre-exercise': '運動前', 'Post-5-weeks-exercise': '五星期運動後', '6-Months-after': '六個月後' };
+            const isEnglish = localStorage.getItem('clinical_platform_language') === 'en';
+            const tpMap = isEnglish ? { 'Pre-exercise': 'Pre-intervention', 'Post-5-weeks-exercise': 'Post-intervention (5 weeks)', '6-Months-after': '6-month follow-up' } : { 'Pre-exercise': '運動前', 'Post-5-weeks-exercise': '五星期運動後', '6-Months-after': '六個月後' };
             document.getElementById('summary-timepoint').innerText = tpMap[res.timepoint] || res.timepoint;
 
             document.getElementById('summary-ndi-score').innerText = `${res.ndi.percentage}%`;
@@ -2860,8 +2864,9 @@ progress {
             document.getElementById('summary-tsk-severity').innerText = res.tsk.severity;
 
             document.getElementById('summary-pseq-score').innerText = res.pseq.complete ? `${res.pseq.score} / 60` : '— / 60';
-            document.getElementById('summary-pseq-raw').innerText = `(已答題目合計：${res.pseq.raw}；已答 ${res.pseq.answered}/10 題)`;
-            document.getElementById('summary-pseq-complete').innerText = res.pseq.complete ? '10/10 題已完成' : `尚有 ${10 - res.pseq.answered} 題未完成`;
+            const englishUI = localStorage.getItem('clinical_platform_language') === 'en';
+            document.getElementById('summary-pseq-raw').innerText = englishUI ? `(Answered-item total: ${res.pseq.raw}; answered ${res.pseq.answered}/10 questions)` : `(已答題目合計：${res.pseq.raw}；已答 ${res.pseq.answered}/10 題)`;
+            document.getElementById('summary-pseq-complete').innerText = res.pseq.complete ? (englishUI ? '10/10 questions completed' : '10/10 題已完成') : (englishUI ? `${10 - res.pseq.answered} questions incomplete` : `尚有 ${10 - res.pseq.answered} 題未完成`);
 
             document.getElementById('summary-see-score').innerText = `${res.see.mean} / 10`;
             document.getElementById('summary-see-raw').innerText = `(原始總分: ${res.see.raw})`;
@@ -2979,7 +2984,8 @@ progress {
             }
             noMsg.classList.add('hidden');
 
-            const tpMap = { 'Pre-exercise': '運動前', 'Post-5-weeks-exercise': '五星期運動後', '6-Months-after': '六個月後' };
+            const isEnglish = localStorage.getItem('clinical_platform_language') === 'en';
+            const tpMap = isEnglish ? { 'Pre-exercise': 'Pre-intervention', 'Post-5-weeks-exercise': 'Post-intervention (5 weeks)', '6-Months-after': '6-month follow-up' } : { 'Pre-exercise': '運動前', 'Post-5-weeks-exercise': '五星期運動後', '6-Months-after': '六個月後' };
             let html = '';
             filtered.forEach((r) => {
                 html += `<tr class="hover:bg-slate-50 transition">
@@ -3020,11 +3026,8 @@ progress {
             const record = records.find(r => r.id === id && r.timepoint === timepoint);
             if (!record) return;
 
-            const tpMap = {
-                'Pre-exercise': '運動前',
-                'Post-5-weeks-exercise': '五星期運動後',
-                '6-Months-after': '六個月後'
-            };
+            const isEnglish = localStorage.getItem('clinical_platform_language') === 'en';
+            const tpMap = isEnglish ? { 'Pre-exercise': 'Pre-intervention', 'Post-5-weeks-exercise': 'Post-intervention (5 weeks)', '6-Months-after': '6-month follow-up' } : { 'Pre-exercise': '運動前', 'Post-5-weeks-exercise': '五星期運動後', '6-Months-after': '六個月後' };
             pendingDeleteRecord = { id, timepoint };
             document.getElementById('delete-confirm-name').textContent = record.name || '';
             document.getElementById('delete-confirm-id').textContent = record.id || '';
@@ -3185,11 +3188,8 @@ progress {
                 return;
             }
 
-            const tpMap = {
-                'Pre-exercise': '運動前',
-                'Post-5-weeks-exercise': '五星期運動後',
-                '6-Months-after': '六個月後'
-            };
+            const isEnglish = localStorage.getItem('clinical_platform_language') === 'en';
+            const tpMap = isEnglish ? { 'Pre-exercise': 'Pre-intervention', 'Post-5-weeks-exercise': 'Post-intervention (5 weeks)', '6-Months-after': '6-month follow-up' } : { 'Pre-exercise': '運動前', 'Post-5-weeks-exercise': '五星期運動後', '6-Months-after': '六個月後' };
             const exportScopeLabel = tpFilter ? tpMap[tpFilter] || tpFilter : '全部時間點';
 
             // Return the exact answer text corresponding to a stored response.
@@ -3755,7 +3755,7 @@ progress {
       '參加者基本資料':'Participant Information','1. 姓名':'1. Name','2. 編號':'2. Participant ID',
       '3. 評估日期':'3. Assessment Date','4. 評估時間點':'4. Assessment Time Point',
       '例如：Chan Tai Man':'e.g., Chan Tai Man','例如：D1 / H2 / U3':'e.g., D1 / H2 / U3',
-      '運動前':'Pre-exercise','五星期運動後':'After 5 weeks of exercise','六個月後':'6-month follow-up',
+      '運動前':'Pre-intervention','五星期運動後':'Post-intervention (5 weeks)','六個月後':'6-month follow-up',
       '前往 NDI 問卷':'Continue to NDI Questionnaire','前往 DASH 問卷':'Continue to DASH Questionnaire',
       '前往 SF-12 問卷':'Continue to SF-12 Questionnaire','前往 TSK 問卷':'Continue to TSK Questionnaire',
       '前往 PSEQ 問卷':'Continue to PSEQ Questionnaire','前往 SEE Scale':'Continue to SEE Scale',
@@ -3789,6 +3789,32 @@ progress {
       '過往問卷紀錄':'Previous Questionnaire Records','評估時間點':'Assessment Time Point',
       '所有臨床評估問卷之綜合得分與分析':'Combined Scores and Analysis of All Clinical Assessment Questionnaires',
       '臨床評估問卷總結報告':'Clinical Assessment Questionnaire Summary Report',
+      '儲存評估紀錄':'Save Assessment Record','列印報告':'Print Report',
+      '姓名':'Name','編號':'Participant ID','評估日期':'Assessment Date','評估時間點':'Assessment Time Point',
+      '頸椎功能障礙指數 (NDI)':'Neck Disability Index (NDI)','頸椎功能':'Neck Function','失能嚴重度：':'Disability Severity:','無失能':'No disability',
+      '上肢功能受損程度問卷 (DASH)':'Disabilities of the Arm, Shoulder and Hand (DASH)','上肢功能':'Upper-Limb Function',
+      '範圍：0（無失能）至 100（極嚴重）':'Range: 0 (no disability) to 100 (extreme disability)','功能受損程度：':'Functional Impairment:','極小困難 / 正常':'Little or no difficulty / Normal',
+      '簡明12項健康狀況調查問卷 (SF-12)':'12-Item Short Form Health Survey (SF-12)','生活品質':'Quality of Life',
+      'PCS (生理健康)':'PCS (Physical Health)','MCS (心理健康)':'MCS (Mental Health)','常模標準平均值：50 ± 10':'Norm-based population mean: 50 ± 10',
+      '坦帕運動恐懼症量表 (TSK)':'Tampa Scale for Kinesiophobia (TSK)','運動恐懼症':'Kinesiophobia','範圍：17 至 68 (臨界值 > 37)':'Range: 17–68 (cut-off: > 37)','恐懼程度：':'Fear Level:','低至中度恐懼':'Low to moderate fear',
+      '疼痛自我效能量表 (PSEQ)':'Pain Self-Efficacy Questionnaire (PSEQ)','疼痛應對信心':'Confidence in Coping with Pain','原始總分：':'Raw total score: ',
+      '作答狀態：':'Completion Status:','尚未完成':'Not completed','已答題目合計：':'Answered-item total: ','已答 ':'Answered ','題已完成':' questions completed','尚有 ':'Remaining ','題未完成':' questions incomplete',
+      '運動自我效能量表 (SEE Scale)':'Self-Efficacy for Exercise Scale (SEE Scale)','運動信心':'Exercise Confidence','原始總分:':'Raw total score:','信心程度：':'Confidence Level:','低自我效能':'Low self-efficacy',
+      '完整單項答題細節 breakdown (所有問卷)':'Full Item-Level Response Breakdown (All Questionnaires)','展開 / 摺疊各項回答':'Expand / Collapse Responses',
+      'NDI 頸部失能細節':'NDI Neck Disability Details','得分':'Score','DASH 上肢功能細節':'DASH Upper-Limb Function Details','SF-12 生活品質細節':'SF-12 Quality-of-Life Details','選項代碼':'Response Code','TSK 運動恐懼細節':'TSK Kinesiophobia Details','PSEQ 疼痛自我效能細節':'PSEQ Pain Self-Efficacy Details','未作答':'Not answered','SEE 運動自我效能細節':'SEE Exercise Self-Efficacy Details',
+      '檢視已保存之個案資料，支援完整原始數據 Excel 匯出。':'Review saved participant records and export complete raw data to Excel.',
+      '清除全部':'Clear All','搜尋編號或姓名...':'Search by participant ID or name...','全部時間點':'All Time Points','姓名 / 編號':'Name / ID','時間點':'Time Point','操作':'Actions',
+      '目前尚無任何儲存的評估紀錄。':'No saved assessment records are currently available.','檢視':'View',
+      '確認刪除問卷紀錄':'Confirm Record Deletion','您即將刪除以下過往問卷紀錄：':'You are about to delete the following questionnaire record:',
+      '此動作無法復原。':'This action cannot be undone.','確認刪除':'Confirm Delete','確認清除全部問卷紀錄':'Confirm Clear All Records',
+      '您即將刪除所有已儲存的過往問卷紀錄。':'You are about to delete all saved questionnaire records.',
+      '此動作會永久刪除全部紀錄，且無法復原。':'This will permanently delete all records and cannot be undone.',
+      '評估員登入':'Assessor Login','請輸入評估員共用密碼以存取雲端評估紀錄。':'Enter the shared assessor password to access cloud assessment records.',
+      '評估員密碼':'Assessor Password','輸入評估員密碼...':'Enter assessor password...',
+      '更改評估員密碼':'Change Assessor Password','不需要輸入舊密碼；請先輸入 Master 密碼，再設定新的評估員密碼。':'You do not need the old password. Enter the master password, then set a new assessor password.',
+      'Master 密碼':'Master Password','輸入 Master 密碼...':'Enter master password...','新評估員密碼':'New Assessor Password','輸入新的評估員密碼...':'Enter a new assessor password...',
+      '確認新密碼':'Confirm New Password','再次輸入新的評估員密碼...':'Re-enter the new assessor password...','儲存新密碼':'Save New Password',
+      '完成':'Complete','題':'questions'
       '請回答所有標紅框的問題！':'Please answer all questions outlined in red!',
       'Thank you for your participation!':'Thank you for your participation!',
       '資料已儲存':'Record saved','儲存成功':'Saved successfully','儲存失敗':'Unable to save',
@@ -3935,6 +3961,11 @@ progress {
       document.documentElement.lang = language;
       document.title = language === 'en' ? 'Clinical Assessment Questionnaire Platform - NDI, DASH, SF-12, TSK, PSEQ & SEE Scale' : '臨床評估問卷平台 - NDI, DASH, SF-12, TSK, PSEQ & SEE Scale';
       walk(document.body);
+      if (language === 'en') {
+        document.querySelectorAll('[id$="-progress-text"]').forEach(function (el) {
+          el.textContent = el.textContent.replace(/(\d+%)\s*完成\s*\((\d+)\/(\d+)\s*題\)/, '$1 Complete ($2/$3 questions)');
+        });
+      }
       var btn = document.getElementById('language-switch-btn');
       if (btn) btn.textContent = language === 'en' ? '繁體中文' : 'English';
     }
