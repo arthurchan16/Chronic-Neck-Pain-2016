@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>臨床評估問卷平台 - NDI, DASH, SF-12, TSK & SEE Scale</title>
+    <title>臨床評估問卷平台 - NDI, DASH, SF-12, TSK, PSEQ & SEE Scale</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Supabase client must load before cloud configuration is initialized -->
@@ -1069,11 +1069,11 @@ progress {
                 </button>
                 <button id="tab-btn-5" onclick="handleTabClick(5)" class="flex-1 py-2.5 px-3 rounded-lg text-center transition flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-100">
                     <span class="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-xs text-slate-700">6</span>
-                    <span>SEE Scale</span>
+                    <span>PSEQ</span>
                 </button>
-                <button id="tab-btn-6" onclick="handleTabClick(6)" class="hidden flex-1 py-2.5 px-3 rounded-lg text-center transition flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-100">
+                <button id="tab-btn-7" onclick="handleTabClick(7)" class="hidden flex-1 py-2.5 px-3 rounded-lg text-center transition flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-100">
                     <span class="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-xs text-slate-700">7</span>
-                    <span>總結報告</span>
+                    <span>SEE Scale</span>
                 </button>
                 <button id="tab-btn-history" onclick="switchTab('history')" class="hidden flex-1 py-2.5 px-3 rounded-lg text-center transition flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-100 border-l border-slate-200">
                     <i class="fa-solid fa-folder-open text-teal-600"></i>
@@ -1291,8 +1291,42 @@ progress {
             </div>
         </div>
 
-        <!-- Step 5: Self-Efficacy for Exercise Scale (SEE) -->
+        <!-- Step 5: Pain Self-Efficacy Questionnaire (PSEQ) -->
         <div id="step-5" class="tab-content hidden bg-white rounded-xl border border-slate-200 shadow-xs p-6 mb-6">
+            <div class="flex justify-between items-start border-b pb-4 mb-3">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2"><i class="fa-solid fa-heart-pulse text-teal-600"></i>疼痛自我效能量表 (PSEQ)</h2>
+                    <p class="text-sm text-slate-600 mt-1">請評估您目前有多大信心，即使感到疼痛，您仍能做到以下各項事情。</p>
+                </div>
+                <span class="text-xs bg-slate-100 text-slate-600 px-3 py-1 rounded-full border border-slate-200 font-medium">10 題</span>
+            </div>
+            <div class="mb-5 p-4 rounded-xl bg-teal-50 border border-teal-200 text-sm text-slate-800 leading-relaxed">
+                <p class="font-bold mb-2">填寫說明</p>
+                <p>請在每一題下方的量表中，圈選最能代表您目前信心程度的數字：</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 my-3 font-bold">
+                    <div class="bg-white rounded-lg border border-rose-200 px-3 py-2 text-rose-700">0 = 完全沒有信心</div>
+                    <div class="bg-white rounded-lg border border-teal-300 px-3 py-2 text-teal-800 sm:text-right">6 = 完全有信心</div>
+                </div>
+                <p>請注意，本問卷並不是詢問您目前是否有做這些事情，而是詢問您即使感到疼痛，您目前有多大信心能做到這些事情。</p>
+            </div>
+            <div class="sticky-progress-wrapper">
+                <div class="bg-slate-50 p-4 rounded-xl border border-teal-200 shadow-sm">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs sm:text-sm font-extrabold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-chart-pie text-teal-600 text-base"></i>填寫進度即時預覽 (PSEQ)</span>
+                        <span id="pseq-progress-text" class="text-xs sm:text-sm font-black text-teal-800 bg-teal-100 px-3 py-1 rounded-full border border-teal-300">0% 完成 (0/10 題)</span>
+                    </div>
+                    <div class="enhanced-progress-container h-5 sm:h-6 w-full"><div id="pseq-progress-bar" class="enhanced-progress-bar h-full w-0 shadow-sm"></div></div>
+                </div>
+            </div>
+            <div id="pseq-questions-container" class="space-y-6"></div>
+            <div class="mt-8 flex justify-between items-center pt-4 border-t border-slate-100">
+                <button onclick="switchTab(4)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-5 py-2.5 rounded-lg text-sm transition flex items-center gap-2"><i class="fa-solid fa-arrow-left"></i> 上一步</button>
+                <button onclick="handleNextStep(5)" class="bg-teal-700 hover:bg-teal-800 text-white font-medium px-6 py-2.5 rounded-lg text-sm shadow-xs transition flex items-center gap-2"><span>前往 SEE Scale 問卷</span><i class="fa-solid fa-arrow-right"></i></button>
+            </div>
+        </div>
+
+        <!-- Step 6: Self-Efficacy for Exercise Scale (SEE) -->
+        <div id="step-6" class="tab-content hidden bg-white rounded-xl border border-slate-200 shadow-xs p-6 mb-6">
             <div class="flex justify-between items-start border-b pb-4 mb-3">
                 <div>
                     <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
@@ -1321,10 +1355,10 @@ progress {
             <div id="see-questions-container" class="space-y-6"></div>
 
             <div class="mt-8 flex justify-between items-center pt-4 border-t border-slate-100">
-                <button onclick="switchTab(4)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-5 py-2.5 rounded-lg text-sm transition flex items-center gap-2">
+                <button onclick="switchTab(5)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-5 py-2.5 rounded-lg text-sm transition flex items-center gap-2">
                     <i class="fa-solid fa-arrow-left"></i> 上一步
                 </button>
-                <button onclick="handleNextStep(5)" class="bg-teal-700 hover:bg-teal-800 text-white font-medium px-6 py-2.5 rounded-lg text-sm shadow-xs transition flex items-center gap-2">
+                <button onclick="handleNextStep(6)" class="bg-teal-700 hover:bg-teal-800 text-white font-medium px-6 py-2.5 rounded-lg text-sm shadow-xs transition flex items-center gap-2">
                     <span>完成問卷</span>
                     <i class="fa-solid fa-circle-check"></i>
                 </button>
@@ -1347,8 +1381,8 @@ progress {
             </div>
         </div>
 
-        <!-- Step 6: Summary View (Assessor Only) -->
-        <div id="step-6" class="tab-content hidden bg-white rounded-xl border border-slate-200 shadow-xs p-6 mb-6">
+        <!-- Step 7: Summary View (Assessor Only) -->
+        <div id="step-7" class="tab-content hidden bg-white rounded-xl border border-slate-200 shadow-xs p-6 mb-6">
             <div class="flex flex-col sm:flex-row justify-between sm:items-center border-b pb-4 mb-6 gap-3">
                 <div>
                     <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
