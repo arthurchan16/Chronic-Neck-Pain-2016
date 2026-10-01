@@ -1285,7 +1285,7 @@ progress {
                     <i class="fa-solid fa-arrow-left"></i> 上一步
                 </button>
                 <button onclick="handleNextStep(4)" class="bg-teal-700 hover:bg-teal-800 text-white font-medium px-6 py-2.5 rounded-lg text-sm shadow-xs transition flex items-center gap-2">
-                    <span>前往 SEE Scale 問卷</span>
+                    <span>前往 PSEQ 問卷</span>
                     <i class="fa-solid fa-arrow-right"></i>
                 </button>
             </div>
@@ -2544,7 +2544,7 @@ progress {
             const base = "flex-1 py-2.5 px-3 rounded-lg text-center transition flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-100";
             const active = "flex-1 py-2.5 px-3 rounded-lg text-center transition flex items-center justify-center gap-1.5 bg-teal-700 text-white font-semibold";
 
-            for (let i = 0; i <= 6; i++) {
+            for (let i = 0; i <= 7; i++) {
                 const btn = document.getElementById(`tab-btn-${i}`);
                 if (!btn) continue;
                 btn.className = base + (btn.id === 'tab-btn-7' && !isAssessorMode ? ' hidden' : '');
@@ -3112,6 +3112,7 @@ progress {
             (rec.dash?.details || []).forEach((d, i) => restoreRadio(`dash_${i}`, d.score));
             (rec.sf12?.details || []).forEach((d, i) => restoreRadio(`sf12_${i}`, d.score));
             (rec.tsk?.details || []).forEach((d, i) => restoreRadio(`tsk_${i}`, d.rawScore ?? d.score));
+            (rec.pseq?.details || []).forEach((d, i) => restoreRadio(`pseq_${i}`, d.score));
             (rec.see?.details || []).forEach((d, i) => restoreRadio(`see_${i}`, d.score));
 
             switchTab(7);
@@ -3181,6 +3182,11 @@ progress {
                         : `${raw}: ${tskOptions[raw - 1] || ''}`;
                 }
 
+                if (scale === 'PSEQ') {
+                    const code = Number(detail.score);
+                    return Number.isInteger(code) && code >= 0 && code <= 6 ? `${code}: ${code}` : '';
+                }
+
                 if (scale === 'SEE') {
                     const code = Number(detail.score);
                     return Number.isInteger(code) && code >= 0 && code <= 10
@@ -3203,6 +3209,7 @@ progress {
                 "SF-12 PCS": r.sf12?.pcs ?? '',
                 "SF-12 MCS": r.sf12?.mcs ?? '',
                 "TSK-17 Score (/68)": r.tsk?.score ?? '',
+                "PSEQ Total (/60)": r.pseq?.score ?? '',
                 "SEE Mean (/10)": r.see?.mean ?? ''
             }));
 
@@ -3271,6 +3278,14 @@ progress {
                 })
             );
 
+            const pseqData = buildQuestionnaireRows(
+                'PSEQ',
+                pseqQuestions.length,
+                i => pseqQuestions[i] || `Question ${i + 1}`,
+                r => r.pseq?.details,
+                d => ({ "Score": d.score ?? '' })
+            );
+
             const seeData = buildQuestionnaireRows(
                 'SEE',
                 seeQuestions.length,
@@ -3297,6 +3312,7 @@ progress {
                     appendSheet(dashData, 'DASH Details', [18, 16, 15, 20, 10, 55, 55, 10]);
                     appendSheet(sf12Data, 'SF-12 Details', [18, 16, 15, 20, 10, 65, 55, 14]);
                     appendSheet(tskData, 'TSK Details', [18, 16, 15, 20, 10, 65, 55, 14, 14]);
+                    appendSheet(pseqData, 'PSEQ Details', [18, 16, 15, 20, 10, 75, 20, 10]);
                     appendSheet(seeData, 'SEE Details', [18, 16, 15, 20, 10, 65, 20, 10]);
 
                     const excelBytes = XLSX.write(workbook, {
@@ -3317,7 +3333,7 @@ progress {
                     downloadAnchor.remove();
                     setTimeout(() => URL.revokeObjectURL(url), 1000);
 
-                    showToast(`Excel 檔案已成功匯出：${exportScopeLabel}（Summary + 5 個問卷明細工作表）。`, 'success');
+                    showToast(`Excel 檔案已成功匯出：${exportScopeLabel}（Summary + 6 個問卷明細工作表）。`, 'success');
                     return;
                 }
 
@@ -3384,7 +3400,7 @@ progress {
                 fallbackAnchor.remove();
                 setTimeout(() => URL.revokeObjectURL(fallbackUrl), 1000);
 
-                showToast(`Excel 相容檔案已成功匯出：${exportScopeLabel}（Summary + 5 個問卷明細工作表）。`, 'success');
+                showToast(`Excel 相容檔案已成功匯出：${exportScopeLabel}（Summary + 6 個問卷明細工作表）。`, 'success');
             } catch (error) {
                 console.error('Excel export failed:', error);
                 showToast('Excel 匯出失敗，請重新載入頁面後再試。', 'error');
