@@ -1033,7 +1033,11 @@ progress {
                     <button type="button" onclick="changeFontSize('normal')" id="fs-normal-btn" class="px-2.5 py-1 rounded bg-teal-700 text-white font-semibold transition" title="標準字體">標準</button>
                     <button type="button" onclick="changeFontSize('large')" id="fs-large-btn" class="px-2.5 py-1 rounded hover:bg-slate-700 transition" title="放大字體">大</button>
                     <button type="button" onclick="changeFontSize('xlarge')" id="fs-xlarge-btn" class="px-2.5 py-1 rounded hover:bg-slate-700 transition" title="特大字體">特大</button>
-                    <button type="button" id="language-switch-btn" class="px-2.5 py-1 rounded bg-teal-700 text-white font-semibold hover:bg-teal-600 transition whitespace-nowrap" aria-label="Switch language" title="繁體中文 / English">English</button>
+                </div>
+                <!-- Language control is deliberately separate from font-size controls -->
+                <div id="language-control" class="bg-slate-800 border border-slate-700 rounded-lg p-1 flex items-center gap-2 text-xs text-slate-200">
+                    <span id="language-control-label" class="px-1.5 text-slate-300 hidden sm:inline-flex items-center gap-1.5"><i class="fa-solid fa-language" aria-hidden="true"></i> 語言</span>
+                    <button type="button" id="language-switch-btn" class="px-3 py-1.5 rounded-md bg-teal-600 text-white font-semibold hover:bg-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-300 focus:ring-offset-2 focus:ring-offset-slate-800 transition whitespace-nowrap" aria-label="Switch language" title="Switch between Traditional Chinese and English">English</button>
                 </div>
 
                 <div id="mode-badge" class="hidden sm:flex px-3 py-1 rounded-full text-xs font-semibold bg-teal-900/60 text-teal-200 border border-teal-700/50 items-center gap-1.5">
@@ -3748,7 +3752,7 @@ progress {
     var language = localStorage.getItem('clinical_platform_language') || 'zh-TW';
     var translations = {
       '臨床評估問卷平台':'Clinical Assessment Questionnaire Platform',
-      '字體:':'Font size:',
+      '字體:':'Font size:','語言':'Language',
       '標準字體':'Standard font','標準':'Standard','放大字體':'Larger font','大':'Large','特大字體':'Extra-large font','特大':'Extra-large',
       '參加者模式':'Participant Mode','評估員':'Assessor','鎖定':'Lock',
       '評估員模式已啟用：':'Assessor mode enabled:',
@@ -3823,7 +3827,7 @@ progress {
       '無失能 (0-8%)':'No disability (0–8%)','輕度失能 (9-20%)':'Mild disability (9–20%)','中度失能 (21-40%)':'Moderate disability (21–40%)','嚴重失能 (41-60%)':'Severe disability (41–60%)','完全殘障 (>60%)':'Complete disability (>60%)',
       '正常 / 極小困難':'Normal / Little difficulty','輕度困難':'Mild difficulty','中度至重度困難':'Moderate to severe difficulty','嚴重上肢功能受損':'Severe upper-limb impairment',
       '較高運動恐懼程度 (≥37)':'Higher kinesiophobia (≥37)','較低運動恐懼程度 (<37)':'Lower kinesiophobia (<37)',
-      '高運動自我效能 (信心充足)':'High exercise self-efficacy (confident)','中度運動自我效能':'Moderate exercise self-efficacy','低運動自我效能':'Low exercise self-efficacy'
+      '高運動自我效能 (信心充足)':'High exercise self-efficacy (confident)','中度運動自我效能':'Moderate exercise self-efficacy','低運動自我效能':'Low exercise self-efficacy',
       '請回答所有標紅框的問題！':'Please answer all questions outlined in red!',
       'Thank you for your participation!':'Thank you for your participation!',
       '資料已儲存':'Record saved','儲存成功':'Saved successfully','儲存失敗':'Unable to save',
@@ -3988,17 +3992,12 @@ progress {
       if (btn) btn.textContent = language === 'en' ? '繁體中文' : 'English';
     }
     function addButton() {
+      // Keep the language switch in its dedicated header control; never create a floating duplicate.
       var button = document.getElementById('language-switch-btn');
-      if (!button) {
-        button = document.createElement('button');
-        button.id = 'language-switch-btn';
-        button.type = 'button';
-        button.style.cssText = 'position:fixed;top:76px;right:16px;z-index:99999;display:block;visibility:visible;opacity:1;background:#0f766e;color:#fff;border:2px solid #5eead4;border-radius:10px;padding:10px 16px;font-size:14px;font-weight:700;line-height:1.2;box-shadow:0 4px 14px rgba(0,0,0,.35);cursor:pointer;';
-        document.body.appendChild(button);
-      }
+      if (!button) return;
       button.textContent = language === 'en' ? '繁體中文' : 'English';
-      button.setAttribute('aria-label', 'Switch language');
-      button.setAttribute('title', '繁體中文 / English');
+      button.setAttribute('aria-label', language === 'en' ? 'Switch to Traditional Chinese' : 'Switch to English');
+      button.setAttribute('title', language === 'en' ? 'Switch to Traditional Chinese' : 'Switch to English');
       if (!button.dataset.languageSwitchBound) {
         button.addEventListener('click', applyLanguage);
         button.dataset.languageSwitchBound = 'true';
