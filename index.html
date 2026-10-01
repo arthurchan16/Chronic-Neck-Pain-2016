@@ -3735,5 +3735,175 @@ progress {
 
 
 
+
+<script id="bilingual-language-switch-v1">
+(function () {
+    'use strict';
+    var language = localStorage.getItem('clinical_platform_language') || 'zh-TW';
+    var translations = {
+      '臨床評估問卷平台':'Clinical Assessment Questionnaire Platform',
+      '字體:':'Font size:',
+      '標準字體':'Standard font','標準':'Standard','放大字體':'Larger font','大':'Large','特大字體':'Extra-large font','特大':'Extra-large',
+      '參加者模式':'Participant Mode','評估員':'Assessor','鎖定':'Lock',
+      '評估員模式已啟用：':'Assessor mode enabled:',
+      '您可以自由點擊任何標籤跳轉至不同問卷、檢視總結報告與歷史紀錄。':'You can select any tab to open a questionnaire, view the summary report, or review saved records.',
+      '更改密碼':'Change Password','已存紀錄':'Saved Records',
+      '參加者填寫模式：':'Participant mode:',
+      '請按順序完成各頁面問題，系統會引導您完成所有量表。':'Please complete each section in order. The system will guide you through all questionnaires.',
+      '基本資料':'Demographics','總結報告':'Summary Report','歷史紀錄':'Record History',
+      '參加者基本資料':'Participant Information','1. 姓名':'1. Name','2. 編號':'2. Participant ID',
+      '3. 評估日期':'3. Assessment Date','4. 評估時間點':'4. Assessment Time Point',
+      '例如：Chan Tai Man':'e.g., Chan Tai Man','例如：D1 / H2 / U3':'e.g., D1 / H2 / U3',
+      '運動前':'Pre-exercise','五星期運動後':'After 5 weeks of exercise','六個月後':'6-month follow-up',
+      '前往 NDI 問卷':'Continue to NDI Questionnaire','前往 DASH 問卷':'Continue to DASH Questionnaire',
+      '前往 SF-12 問卷':'Continue to SF-12 Questionnaire','前往 TSK 問卷':'Continue to TSK Questionnaire',
+      '前往 PSEQ 問卷':'Continue to PSEQ Questionnaire','前往 SEE Scale':'Continue to SEE Scale',
+      '上一步':'Previous','下一步':'Next','填寫進度即時預覽':'Completion Progress',
+      '頸椎功能障礙指數 (NDI)':'Neck Disability Index (NDI)',
+      '請針對每個項目，選擇一個最符合您「今天」狀況的描述。':'For each item, select the description that best reflects your situation today.',
+      '上肢功能受損程度問卷 (DASH)':'Disabilities of the Arm, Shoulder and Hand (DASH)',
+      '本問卷的內容會問及有關你的病癥，以及你進行某些活動的能力。':'This questionnaire asks about your symptoms and ability to perform certain activities.',
+      '請根據你過去一星期內的情況，就下列每一條問題，選取最適合的數字作答。':'Considering the past week, select the number that best describes your situation for each item.',
+      '如果你過去一星期內，沒有機會進行該項活動，請估計你進行該項活動的能力，並選取最適合的答案。':'If you did not have an opportunity to do an activity during the past week, estimate your ability and choose the most appropriate answer.',
+      '你只需要考慮你進行該項活動的能力去選取答案，而不必理會你是用那一隻手或手臂去進行。':'Choose based on your ability to perform the activity, regardless of which hand or arm you use.',
+      '簡明12項健康狀況調查問卷 (SF-12)':'12-Item Short Form Health Survey (SF-12)',
+      '敬請回答下列各問題（問題 1 至 7），並選取最適當的答案。':'Please answer the following questions (Questions 1–7) and select the most appropriate response.',
+      '恐懼－逃避信念問卷 (TSK)':'Tampa Scale for Kinesiophobia (TSK)',
+      '疼痛自我效能量表':'Pain Self-Efficacy Questionnaire (PSEQ)',
+      '此部份將瞭解您從事運動的信心程度。':'This section assesses your confidence in being physically active.',
+      '運動自我效能量表 (SEE Scale)':'Self-Efficacy for Exercise Scale (SEE Scale)',
+      '以下是假設的情況，請選取您有多少信心可以運動（0 代表「沒什麼信心」，10 代表「非常有信心」，越高分越有信心）':'For each hypothetical situation, rate your confidence that you could exercise (0 = no confidence, 10 = complete confidence; higher scores indicate greater confidence).',
+      '請評估您目前有多大信心，即使感到疼痛，您仍能做到以下各項事情。':'Please rate how confident you are that you can do each of the following things, even when you are in pain.',
+      '請在每一題下方的量表中，圈選最能代表您目前信心程度的數字：':'For each item, select the number that best represents your current confidence:',
+      '完全沒有信心':'Not at all confident','完全有信心':'Completely confident',
+      '請注意，本問卷並不是詢問您目前是否有做這些事情，而是詢問您即使感到疼痛，您目前有多大信心能做到這些事情。':'This questionnaire asks how confident you are that you can do these things despite pain, not whether you are currently doing them.',
+      '非駕駛者請選「不適用」':'If you do not drive, select “Not applicable”.',
+      '不適用 (我不駕駛 / 開車)':'Not applicable (I do not drive)',
+      '不適用':'Not applicable','沒有困難':'No difficulty','少許困難':'Mild difficulty','中度困難':'Moderate difficulty','非常困難':'Severe difficulty','不能做到':'Unable to do',
+      '完全沒有':'Not at all','少許':'A little','中度':'Moderately','相當大程度':'Quite a bit','極度':'Extremely',
+      '沒有':'None','輕微':'Mild','嚴重':'Severe','非常不同意':'Strongly disagree','不同意':'Disagree','並非同意或不同意':'Neither agree nor disagree','同意':'Agree','非常同意':'Strongly agree',
+      '極好':'Excellent','很好':'Very good','好':'Good','一般':'Fair','差':'Poor','有很大限制':'Limited a lot','有一點限制':'Limited a little','沒有任何限制':'Not limited at all',
+      '常常如此':'All of the time','大部份時間':'Most of the time','大部分時間':'Most of the time','有時':'Some of the time','偶爾':'A little of the time','從來沒有':'None of the time',
+      '已儲存的評估紀錄與題項級資料調閱 (評估員專用)':'Saved assessment records and item-level data (assessor only)',
+      '過往問卷紀錄':'Previous Questionnaire Records','評估時間點':'Assessment Time Point',
+      '所有臨床評估問卷之綜合得分與分析':'Combined Scores and Analysis of All Clinical Assessment Questionnaires',
+      '臨床評估問卷總結報告':'Clinical Assessment Questionnaire Summary Report',
+      '請回答所有標紅框的問題！':'Please answer all questions outlined in red!',
+      'Thank you for your participation!':'Thank you for your participation!',
+      '資料已儲存':'Record saved','儲存成功':'Saved successfully','儲存失敗':'Unable to save',
+      '刪除':'Delete','取消':'Cancel','確認':'Confirm','全部刪除':'Delete All','搜尋':'Search','匯出 Excel':'Export to Excel',
+      '所有時間點':'All Time Points','題':'items','完成':'complete','題目':'Item','得分':'Score','總分':'Total Score',
+      '第一部份：活動能力':'Part 1: Functional Ability','第二部份：病癥嚴重程度':'Part 2: Symptom Severity',
+      '1. 疼痛強度':'1. Pain Intensity','我沒有頸部、肩部疼痛':'I have no pain at the moment.',
+      '我現在有非常輕微的疼痛':'The pain is very mild at the moment.','我現在有中度的疼痛':'The pain is moderate at the moment.',
+      '我現在有較嚴重的疼痛':'The pain is fairly severe at the moment.','我現在有非常嚴重的疼痛':'The pain is very severe at the moment.',
+      '我疼痛的程度嚴重得難以想像':'The pain is the worst imaginable.',
+      '2. 個人照顧 (洗漱、穿衣等)':'2. Personal Care (Washing, Dressing, etc.)',
+      '我能正常自理生活，不引起特殊疼痛':'I can look after myself normally without causing extra pain.',
+      '我能正常自理生活，但會引起特殊疼痛':'I can look after myself normally, but it causes extra pain.',
+      '自理生活時會疼痛，因此必須緩慢、小心':'It is painful to look after myself, so I must be slow and careful.',
+      '生活大部分能自理，但需要幫忙':'I need some help but manage most personal care.',
+      '生活每天都需要幫忙':'I need help every day in most aspects of self-care.',
+      '難於洗漱、穿衣，因而需要臥床':'I cannot get dressed and wash myself and stay in bed.',
+      '3. 提物':'3. Lifting','4. 閱讀':'4. Reading','5. 頭痛':'5. Headaches','6. 集中注意力':'6. Concentration','7. 工作':'7. Work','8. 駕駛 / 開車':'8. Driving','9. 睡眠':'9. Sleeping','10. 娛樂活動':'10. Recreation',
+      '扭開緊或新的瓶蓋':'Opening a tight or new jar','寫字':'Writing','扭動鑰匙':'Turning a key','預備飯餐／煮食':'Preparing a meal','推開重的門':'Pushing open a heavy door',
+      '將物件擺放在高過頭頂的架上':'Placing an object on a shelf above your head','做消耗大量體力的家務（例如：抹窗或洗擦地板）':'Doing heavy household chores (e.g., washing walls or floors)',
+      '園藝或種植':'Gardening','整理床舖':'Making a bed','攜帶購物袋或公事包':'Carrying a shopping bag or briefcase','攜帶重物（超過10磅）':'Carrying a heavy object (over 10 lb)',
+      '更換高過頭頂的燈泡':'Changing a light bulb overhead','清洗或吹乾頭髮':'Washing or blow-drying your hair','清洗背部':'Washing your back','穿著過頭衣物':'Putting on a pullover sweater','用刀切食物':'Using a knife to cut food',
+      '進行性行為':'Sexual activity','進行一些需要較少體力的餘閒活動（例如：玩紙牌遊戲、編織等）':'Recreational activities requiring little effort (e.g., cards, knitting)',
+      '進行一些需要上肢發力或承受衝力的餘閒活動（例如：打高爾夫球、打排球、打網球、錘擊等）':'Recreational activities requiring force or impact through the arm (e.g., golf, volleyball, tennis, hammering)',
+      '進行一些需要手臂自由活動的餘閒活動（例如：玩飛碟、打羽毛球等）':'Recreational activities requiring free arm movement (e.g., Frisbee, badminton)',
+      '乘搭交通工具從一處地方到另一處地方':'Getting from one place to another using transportation',
+      '肩膊、手臂或手部感到痛楚':'Pain in your shoulder, arm or hand','從事某些特定的活動時，肩膊、手臂或手部感到痛楚':'Pain in your shoulder, arm or hand when doing a specific activity',
+      '肩膊、手臂或手部有被針刺的感覺':'Tingling in your shoulder, arm or hand','肩膊、手臂或手部軟弱無力':'Weakness in your shoulder, arm or hand','肩膊、手臂或手部僵硬':'Stiffness in your shoulder, arm or hand',
+      '即使感到疼痛，我仍能享受生活。':'I can enjoy life despite pain.',
+      '即使感到疼痛，我仍能完成大部分家務（例如整理家居、洗碗等）。':'I can do most household chores despite pain (e.g., tidying or washing dishes).',
+      '即使感到疼痛，我仍能像以往一樣經常與朋友或家人社交。':'I can socialise with friends or family as often as before despite pain.',
+      '在大多數情況下，我都能應付疼痛。':'I can cope with pain in most situations.',
+      '即使感到疼痛，我仍能從事某種形式的工作。（「工作」包括家務、有薪及無薪工作。）':'I can do some form of work despite pain (including housework, paid or unpaid work).',
+      '即使感到疼痛，我仍能做很多自己喜歡的事情，例如興趣或休閒活動。':'I can do many things I enjoy, such as hobbies or leisure activities, despite pain.',
+      '即使不使用藥物，我仍能應付疼痛。':'I can cope with pain without medication.',
+      '即使感到疼痛，我仍能實現人生中的大部分目標。':'I can achieve most of my life goals despite pain.',
+      '即使感到疼痛，我仍能維持正常的生活方式。':'I can live a normal lifestyle despite pain.',
+      '即使感到疼痛，我仍能逐步增加活動量。':'I can gradually increase my activity despite pain.',
+      '1. 如果天氣使您感到困擾的時候':'1. When the weather bothers you','2. 如果您對該運動沒有興趣的時候':'2. When you are not interested in exercising',
+      '3. 如果運動時會感覺疼痛的時候':'3. When you feel pain while exercising','4. 如果您一個人運動、沒有人作伴的時候':'4. When you exercise alone without company',
+      '5. 如果您覺得沒有感受到運動的樂趣的時候':'5. When exercise does not feel enjoyable','6. 如果您忙於其他事情的時候':'6. When you are busy with other things',
+      '7. 如果您覺得疲倦的時候':'7. When you feel tired','8. 如果您覺得有壓力的時候':'8. When you feel stressed','9. 如果您覺得心情鬱卒 (憂鬱) 的時候':'9. When you feel down or depressed',
+      '1. 如果我運動，我會害怕自己受傷':'1. If I exercise, I am afraid I might injure myself',
+      '2. 如果我嘗試克服，疼痛會加劇':'2. If I try to overcome it, my pain will increase',
+      '3. 我的身體告訴自己我犯了非常危險的錯誤':'3. My body is telling me that I have done something dangerously wrong',
+      '4. 如果我運動的話，疼痛很可能會緩解':'4. If I exercise, my pain would probably decrease',
+      '5. 人們對我的健康狀況不夠關注':'5. People are not taking my medical condition seriously enough',
+      '6. 發生的意外使我的身體將來一直承受風險':'6. My accident has put my body at risk for the rest of my life',
+      '7. 疼痛總是意味著身體受到了傷害':'7. Pain always means that I have injured my body',
+      '8. 僅僅使疼痛加劇的事情不意味著它們很危險':'8. Just because something makes pain worse does not mean it is dangerous',
+      '9. 我害怕自己會因為意外而受傷':'9. I am afraid I might injure myself accidentally',
+      '10. 不做多餘的動作，只要保持小心是我能做到的防止疼痛惡化的最安全的事':'10. The safest way to prevent pain worsening is to avoid unnecessary movements and be careful',
+      '11. 如果我的身體沒有潛在的危險，我不會感到如此疼痛':'11. I would not have this much pain if there were not something potentially dangerous happening in my body',
+      '12. 我感到很痛，但如果我積極活動情況會好轉':'12. Although I am in pain, I would be better off if I were physically active',
+      '13. 疼痛使我知道何時停止運動以防止受傷':'13. Pain tells me when to stop exercising to prevent injury',
+      '14. 像我這樣的狀態而積極活動真的不安全':'14. It is not really safe for someone with my condition to be physically active',
+      '15. 我因為容易受傷而無法做常人可以做的事':'15. I cannot do everything normal people do because I am too easily injured',
+      '16. 儘管有些活動給我帶來了許多疼痛，但我不認為它們很危險':'16. Although an activity causes me much pain, I do not think it is dangerous',
+      '17. 沒有必要在疼痛時去運動':'17. No one should have to exercise when they are in pain'
+    };
+    var reverse = {};
+    Object.keys(translations).forEach(function (key) { reverse[translations[key]] = key; });
+    function translateText(value) {
+      var trimmed = value.trim();
+      if (!trimmed) return value;
+      var replacement = (language === 'en' ? translations[trimmed] : reverse[trimmed]);
+      if (!replacement) return value;
+      return value.replace(trimmed, replacement);
+    }
+    function walk(root) {
+      var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      var nodes = [], node;
+      while ((node = walker.nextNode())) nodes.push(node);
+      nodes.forEach(function (n) { n.nodeValue = translateText(n.nodeValue); });
+      root.querySelectorAll && root.querySelectorAll('[placeholder],[title],[aria-label]').forEach(function (el) {
+        ['placeholder','title','aria-label'].forEach(function (attr) {
+          var v = el.getAttribute(attr); if (v) el.setAttribute(attr, translateText(v));
+        });
+      });
+    }
+    function applyLanguage() {
+      language = language === 'en' ? 'zh-TW' : 'en';
+      localStorage.setItem('clinical_platform_language', language);
+      document.documentElement.lang = language;
+      document.title = language === 'en' ? 'Clinical Assessment Questionnaire Platform - NDI, DASH, SF-12, TSK, PSEQ & SEE Scale' : '臨床評估問卷平台 - NDI, DASH, SF-12, TSK, PSEQ & SEE Scale';
+      walk(document.body);
+      var btn = document.getElementById('language-switch-btn');
+      if (btn) btn.textContent = language === 'en' ? '繁體中文' : 'English';
+    }
+    function addButton() {
+      var controls = document.querySelector('header .flex.items-center.space-x-2');
+      if (!controls) return;
+      var button = document.createElement('button');
+      button.id = 'language-switch-btn';
+      button.type = 'button';
+      button.className = 'px-3 py-1.5 bg-teal-700 hover:bg-teal-600 text-white text-xs font-semibold rounded-lg border border-teal-500 transition whitespace-nowrap';
+      button.textContent = language === 'en' ? '繁體中文' : 'English';
+      button.setAttribute('aria-label', 'Switch language');
+      button.addEventListener('click', applyLanguage);
+      controls.insertBefore(button, controls.firstChild);
+      if (language === 'en') {
+        document.documentElement.lang = 'en';
+        document.title = 'Clinical Assessment Questionnaire Platform - NDI, DASH, SF-12, TSK, PSEQ & SEE Scale';
+        walk(document.body);
+      }
+      var observer = new MutationObserver(function (records) {
+        if (records.some(function (record) { return record.addedNodes.length > 0; })) {
+          walk(document.body);
+        }
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', addButton);
+    else addButton();
+})();
+</script>
+
 </body>
 </html>
