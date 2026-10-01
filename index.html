@@ -1064,16 +1064,16 @@ progress {
                     <span>SF-12</span>
                 </button>
                 <button id="tab-btn-4" onclick="handleTabClick(4)" class="flex-1 py-2.5 px-3 rounded-lg text-center transition flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-100">
-                    <span class="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-xs text-slate-700">5</span>
-                    <span>TSK</span>
+                    <span class="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-xs text-slate-700">5</span><span>TSK</span>
                 </button>
                 <button id="tab-btn-5" onclick="handleTabClick(5)" class="flex-1 py-2.5 px-3 rounded-lg text-center transition flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-100">
-                    <span class="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-xs text-slate-700">6</span>
-                    <span>PSEQ</span>
+                    <span class="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-xs text-slate-700">6</span><span>PSEQ</span>
+                </button>
+                <button id="tab-btn-6" onclick="handleTabClick(6)" class="flex-1 py-2.5 px-3 rounded-lg text-center transition flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-100">
+                    <span class="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-xs text-slate-700">7</span><span>SEE Scale</span>
                 </button>
                 <button id="tab-btn-7" onclick="handleTabClick(7)" class="hidden flex-1 py-2.5 px-3 rounded-lg text-center transition flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-100">
-                    <span class="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-xs text-slate-700">7</span>
-                    <span>SEE Scale</span>
+                    <span class="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-xs text-slate-700">8</span><span>總結報告</span>
                 </button>
                 <button id="tab-btn-history" onclick="switchTab('history')" class="hidden flex-1 py-2.5 px-3 rounded-lg text-center transition flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-100 border-l border-slate-200">
                     <i class="fa-solid fa-folder-open text-teal-600"></i>
@@ -1944,6 +1944,19 @@ progress {
             "4 = 非常同意"
         ];
 
+        const pseqQuestions = [
+            "即使感到疼痛，我仍能享受生活。",
+            "即使感到疼痛，我仍能完成大部分家務（例如整理家居、洗碗等）。",
+            "即使感到疼痛，我仍能像以往一樣經常與朋友或家人社交。",
+            "在大多數情況下，我都能應付疼痛。",
+            "即使感到疼痛，我仍能從事某種形式的工作。（「工作」包括家務、有薪及無薪工作。）",
+            "即使感到疼痛，我仍能做很多自己喜歡的事情，例如興趣或休閒活動。",
+            "即使不使用藥物，我仍能應付疼痛。",
+            "即使感到疼痛，我仍能實現人生中的大部分目標。",
+            "即使感到疼痛，我仍能維持正常的生活方式。",
+            "即使感到疼痛，我仍能逐步增加活動量。"
+        ];
+
         const seeQuestions = [
             "1. 如果天氣使您感到困擾的時候",
             "2. 如果您對該運動沒有興趣的時候",
@@ -1957,7 +1970,7 @@ progress {
         ];
 
         // State variables
-        let currentTab = 0; // 0: Demographics, 1: NDI, 2: DASH, 3: SF-12, 4: TSK, 5: SEE, 'completion': Thank you, 6: Summary
+        let currentTab = 0; // 0: Demographics, 1: NDI, 2: DASH, 3: SF-12, 4: TSK, 5: PSEQ, 6: SEE, 7: Summary
         let isAssessorMode = false;
 
         window.onload = function() {
@@ -1973,6 +1986,7 @@ progress {
             renderDASH();
             renderSF12();
             renderTSK();
+            renderPSEQ();
             renderSEE();
 
             updateTabUI();
@@ -2158,6 +2172,26 @@ progress {
             container.innerHTML = html;
         }
 
+        function renderPSEQ() {
+            const container = document.getElementById('pseq-questions-container');
+            let html = '';
+            pseqQuestions.forEach((qText, qIdx) => {
+                html += `<div class="p-4 rounded-xl border border-slate-200 bg-slate-50/50 pseq-item" data-index="${qIdx}">
+                    <p class="text-xs sm:text-sm font-bold text-slate-800 mb-3">${qIdx + 1}. ${qText}</p>
+                    <div class="see-scale-options">`;
+                for (let i = 0; i <= 7; i++) {
+                    html += `<label class="see-scale-option" for="pseq_${qIdx}_${i}" aria-label="${i} 分">
+                        <input type="radio" id="pseq_${qIdx}_${i}" name="pseq_${qIdx}" value="${i}" onchange="updateSectionProgress('pseq', 10); clearQuestionHighlight('pseq', ${qIdx})">
+                        <span class="font-black text-base">${i}</span>
+                    </label>`;
+                }
+                html += `</div><div class="flex justify-between items-start mt-2 px-1 text-[11px] sm:text-xs font-bold">
+                    <span class="text-rose-600">完全沒有信心</span><span class="text-teal-700">完全有信心</span>
+                </div></div>`;
+            });
+            container.innerHTML = html;
+        }
+
         function renderSEE() {
             const container = document.getElementById('see-questions-container');
             let html = '';
@@ -2328,7 +2362,7 @@ progress {
                 return;
             }
 
-            // Summary report (tabIndex === 6) is assessor only
+            // Summary report (tabIndex === 7) is assessor only
             if (tabIndex === 6 && !isAssessorMode) {
                 showToast('總結報告僅限評估員解鎖後檢視！', 'error');
                 return;
@@ -2351,7 +2385,7 @@ progress {
         }
 
         function handleTabClick(index) {
-            if (isAssessorMode || index <= currentTab || index === 6) {
+            if (isAssessorMode || index <= currentTab || index === 7) {
                 switchTab(index);
             } else {
                 if (validateCurrentStep(currentTab)) {
@@ -2367,17 +2401,17 @@ progress {
                 showToast('請回答所有標紅框的問題！', 'error');
                 return;
             }
-            if (stepIdx < 5) {
+            if (stepIdx < 6) {
                 switchTab(stepIdx + 1);
             } else {
-                // After SEE Scale (Step 5), if participant mode, save automatically and show thank you screen
+                // After SEE Scale (Step 6), save automatically and show thank you screen
                 if (!isAssessorMode) {
                     await saveCurrentAssessment();
                     switchTab('completion');
                 } else {
                     // Assessor can jump straight to summary report
                     await saveCurrentAssessment();
-                    switchTab(6);
+                    switchTab(7);
                 }
             }
         }
@@ -2462,6 +2496,19 @@ progress {
                     }
                 }
             } else if (step === 5) {
+                // PSEQ 10 items
+                for (let i = 0; i < 10; i++) {
+                    const radios = document.querySelectorAll(`input[name="pseq_${i}"]`);
+                    const container = document.querySelector(`.pseq-item[data-index="${i}"]`);
+                    const answered = Array.from(radios).some(r => r.checked);
+                    if (!answered) {
+                        isValid = false;
+                        if (container) container.classList.add('unanswered-highlight');
+                    } else {
+                        if (container) container.classList.remove('unanswered-highlight');
+                    }
+                }
+            } else if (step === 6) {
                 // SEE 9 items
                 for (let i = 0; i < 9; i++) {
                     const radios = document.querySelectorAll(`input[name="see_${i}"]`);
@@ -2485,7 +2532,7 @@ progress {
             for (let i = 0; i <= 6; i++) {
                 const btn = document.getElementById(`tab-btn-${i}`);
                 if (!btn) continue;
-                btn.className = base + (btn.id === 'tab-btn-6' && !isAssessorMode ? ' hidden' : '');
+                btn.className = base + (btn.id === 'tab-btn-7' && !isAssessorMode ? ' hidden' : '');
                 const badge = btn.querySelector('span');
                 if (badge) badge.className = "w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-xs text-slate-700";
                 if (activeTab === i) {
@@ -3339,9 +3386,9 @@ progress {
             if (document.getElementById('mode-label')) document.getElementById('mode-label').innerText = loggedIn ? '評估員模式' : '參加者模式';
             document.getElementById('toggle-assessor-btn')?.classList.toggle('hidden', loggedIn);
             document.getElementById('logout-assessor-btn')?.classList.toggle('hidden', !loggedIn);
-            document.getElementById('tab-btn-6')?.classList.toggle('hidden', !loggedIn);
+            document.getElementById('tab-btn-7')?.classList.toggle('hidden', !loggedIn);
             document.getElementById('tab-btn-history')?.classList.toggle('hidden', !loggedIn);
-            if (!loggedIn && (currentTab === 6 || currentTab === 'history')) switchTab(0);
+            if (!loggedIn && (currentTab === 7 || currentTab === 'history')) switchTab(0);
         }
 
         async function verifyAssessorPassword() {
