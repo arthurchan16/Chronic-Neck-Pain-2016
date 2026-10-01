@@ -2558,18 +2558,18 @@ progress {
         }
 
         function updateNavigationActiveState(activeTab) {
-            const base = "flex-1 py-2.5 px-3 rounded-lg text-center transition flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-100";
-            const active = "flex-1 py-2.5 px-3 rounded-lg text-center transition flex items-center justify-center gap-1.5 bg-teal-700 text-white font-semibold";
+            const base = "flex-1 min-w-0 py-2 px-1.5 rounded-lg text-center transition flex items-center justify-center gap-1 text-slate-600 hover:bg-slate-100 whitespace-nowrap";
+            const active = "flex-1 min-w-0 py-2 px-1.5 rounded-lg text-center transition flex items-center justify-center gap-1 bg-teal-700 text-white font-semibold whitespace-nowrap";
 
             for (let i = 0; i <= 7; i++) {
                 const btn = document.getElementById(`tab-btn-${i}`);
                 if (!btn) continue;
                 btn.className = base + (btn.id === 'tab-btn-7' && !isAssessorMode ? ' hidden' : '');
                 const badge = btn.querySelector('span');
-                if (badge) badge.className = "w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-xs text-slate-700";
+                if (badge) badge.className = "shrink-0 w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-xs text-slate-700";
                 if (activeTab === i) {
                     btn.className = active;
-                    if (badge) badge.className = "w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-xs";
+                    if (badge) badge.className = "shrink-0 w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-xs";
                 }
             }
 
