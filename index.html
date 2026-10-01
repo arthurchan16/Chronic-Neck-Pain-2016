@@ -2840,6 +2840,7 @@ progress {
 
         function calculateAndDisplaySummary() {
             const res = calculateScores();
+            const englishUI = localStorage.getItem('clinical_platform_language') === 'en';
 
             document.getElementById('summary-patient-name').innerText = res.name;
             document.getElementById('summary-patient-id').innerText = res.id;
@@ -2868,7 +2869,6 @@ progress {
             document.getElementById('summary-tsk-severity').innerText = res.tsk.severity;
 
             document.getElementById('summary-pseq-score').innerText = res.pseq.complete ? `${res.pseq.score} / 60` : '— / 60';
-            const englishUI = localStorage.getItem('clinical_platform_language') === 'en';
             document.getElementById('summary-pseq-raw').innerText = englishUI ? `(Answered-item total: ${res.pseq.raw}; answered ${res.pseq.answered}/10 questions)` : `(已答題目合計：${res.pseq.raw}；已答 ${res.pseq.answered}/10 題)`;
             document.getElementById('summary-pseq-complete').innerText = res.pseq.complete ? (englishUI ? '10/10 questions completed' : '10/10 題已完成') : (englishUI ? `${10 - res.pseq.answered} questions incomplete` : `尚有 ${10 - res.pseq.answered} 題未完成`);
 
