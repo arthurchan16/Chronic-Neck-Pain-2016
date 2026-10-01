@@ -1014,7 +1014,6 @@ progress {
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased font-size-normal">
 
     <header class="bg-slate-900 text-white shadow-md sticky top-0 z-40 no-print">
-        <button id="language-switch-btn" type="button" aria-label="Switch language" title="繁體中文 / English" style="position:fixed;top:76px;right:16px;z-index:99999;display:block;visibility:visible;opacity:1;background:#0f766e;color:#fff;border:2px solid #5eead4;border-radius:10px;padding:10px 16px;font-size:14px;font-weight:700;line-height:1.2;box-shadow:0 4px 14px rgba(0,0,0,.35);cursor:pointer;">English</button>
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <div class="flex items-center space-x-3">
                 <div class="bg-teal-600 text-white p-2 rounded-lg font-bold text-xl flex items-center justify-center w-10 h-10 shadow-sm">
@@ -1034,6 +1033,7 @@ progress {
                     <button type="button" onclick="changeFontSize('normal')" id="fs-normal-btn" class="px-2.5 py-1 rounded bg-teal-700 text-white font-semibold transition" title="標準字體">標準</button>
                     <button type="button" onclick="changeFontSize('large')" id="fs-large-btn" class="px-2.5 py-1 rounded hover:bg-slate-700 transition" title="放大字體">大</button>
                     <button type="button" onclick="changeFontSize('xlarge')" id="fs-xlarge-btn" class="px-2.5 py-1 rounded hover:bg-slate-700 transition" title="特大字體">特大</button>
+                    <button type="button" id="language-switch-btn" class="px-2.5 py-1 rounded bg-teal-700 text-white font-semibold hover:bg-teal-600 transition whitespace-nowrap" aria-label="Switch language" title="繁體中文 / English">English</button>
                 </div>
 
                 <div id="mode-badge" class="hidden sm:flex px-3 py-1 rounded-full text-xs font-semibold bg-teal-900/60 text-teal-200 border border-teal-700/50 items-center gap-1.5">
@@ -3847,7 +3847,7 @@ progress {
       '14. 像我這樣的狀態而積極活動真的不安全':'14. It is not really safe for someone with my condition to be physically active',
       '15. 我因為容易受傷而無法做常人可以做的事':'15. I cannot do everything normal people do because I am too easily injured',
       '16. 儘管有些活動給我帶來了許多疼痛，但我不認為它們很危險':'16. Although an activity causes me much pain, I do not think it is dangerous',
-      '17. 沒有必要在疼痛時去運動':'17. No one should have to exercise when they are in pain'
+      '17. 沒有必要在疼痛時去運動':'17. No one should have to exercise when they are in pain',
 
       '我可以提重物而不引起特殊疼痛':'I can lift heavy objects without extra pain.',
       '我可以提重物，但會引起特殊疼痛':'I can lift heavy objects, but it causes extra pain.',
