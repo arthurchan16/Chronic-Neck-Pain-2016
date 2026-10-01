@@ -2849,12 +2849,16 @@ progress {
             document.getElementById('summary-timepoint').innerText = tpMap[res.timepoint] || res.timepoint;
 
             document.getElementById('summary-ndi-score').innerText = `${res.ndi.percentage}%`;
-            document.getElementById('summary-ndi-raw').innerText = `(${res.ndi.raw} 分；計分 ${res.ndi.scored ?? res.ndi.answered} 題)`;
+            document.getElementById('summary-ndi-raw').innerText = englishUI
+                ? `(${res.ndi.raw}; ${res.ndi.scored ?? res.ndi.answered} questions scored)`
+                : `(${res.ndi.raw} 分；計分 ${res.ndi.scored ?? res.ndi.answered} 題)`;
             document.getElementById('summary-ndi-severity').innerText = res.ndi.severity;
 
             document.getElementById('summary-dash-score').innerText = res.dash.score;
             const dashScoreNote = document.getElementById('summary-dash-score')?.parentElement?.querySelector('.text-xs.text-slate-500');
-            if (dashScoreNote) dashScoreNote.innerText = `範圍：0（無失能）至 100（極嚴重）；計分 ${res.dash.scored ?? 30}/30 題`;
+            if (dashScoreNote) dashScoreNote.innerText = englishUI
+                ? `Range: 0 (no disability) to 100 (extreme disability); ${res.dash.scored ?? 30}/30 questions scored`
+                : `範圍：0（無失能）至 100（極嚴重）；計分 ${res.dash.scored ?? 30}/30 題`;
             document.getElementById('summary-dash-severity').innerText = res.dash.severity;
 
             document.getElementById('summary-sf12-pcs').innerText = res.sf12.pcs;
@@ -2869,7 +2873,7 @@ progress {
             document.getElementById('summary-pseq-complete').innerText = res.pseq.complete ? (englishUI ? '10/10 questions completed' : '10/10 題已完成') : (englishUI ? `${10 - res.pseq.answered} questions incomplete` : `尚有 ${10 - res.pseq.answered} 題未完成`);
 
             document.getElementById('summary-see-score').innerText = `${res.see.mean} / 10`;
-            document.getElementById('summary-see-raw').innerText = `(原始總分: ${res.see.raw})`;
+            document.getElementById('summary-see-raw').innerText = englishUI ? `(Raw total score: ${res.see.raw})` : `(原始總分: ${res.see.raw})`;
             document.getElementById('summary-see-severity').innerText = res.see.severity;
 
             renderBreakdowns(res);
@@ -3814,7 +3818,11 @@ progress {
       '更改評估員密碼':'Change Assessor Password','不需要輸入舊密碼；請先輸入 Master 密碼，再設定新的評估員密碼。':'You do not need the old password. Enter the master password, then set a new assessor password.',
       'Master 密碼':'Master Password','輸入 Master 密碼...':'Enter master password...','新評估員密碼':'New Assessor Password','輸入新的評估員密碼...':'Enter a new assessor password...',
       '確認新密碼':'Confirm New Password','再次輸入新的評估員密碼...':'Re-enter the new assessor password...','儲存新密碼':'Save New Password',
-      '完成':'Complete','題':'questions'
+      '完成':'Complete','題':'questions',
+      '無失能 (0-8%)':'No disability (0–8%)','輕度失能 (9-20%)':'Mild disability (9–20%)','中度失能 (21-40%)':'Moderate disability (21–40%)','嚴重失能 (41-60%)':'Severe disability (41–60%)','完全殘障 (>60%)':'Complete disability (>60%)',
+      '正常 / 極小困難':'Normal / Little difficulty','輕度困難':'Mild difficulty','中度至重度困難':'Moderate to severe difficulty','嚴重上肢功能受損':'Severe upper-limb impairment',
+      '較高運動恐懼程度 (≥37)':'Higher kinesiophobia (≥37)','較低運動恐懼程度 (<37)':'Lower kinesiophobia (<37)',
+      '高運動自我效能 (信心充足)':'High exercise self-efficacy (confident)','中度運動自我效能':'Moderate exercise self-efficacy','低運動自我效能':'Low exercise self-efficacy'
       '請回答所有標紅框的問題！':'Please answer all questions outlined in red!',
       'Thank you for your participation!':'Thank you for your participation!',
       '資料已儲存':'Record saved','儲存成功':'Saved successfully','儲存失敗':'Unable to save',
