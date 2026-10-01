@@ -3938,8 +3938,8 @@ progress {
       if (btn) btn.textContent = language === 'en' ? '繁體中文' : 'English';
     }
     function addButton() {
-      var controls = document.querySelector('header .flex.items-center.space-x-2');
-      if (!controls) return;
+      var controls = document.querySelector('header .flex.items-center.justify-between > div:last-child') || document.querySelector('header .max-w-7xl');
+      if (!controls || document.getElementById('language-switch-btn')) return;
       var button = document.createElement('button');
       button.id = 'language-switch-btn';
       button.type = 'button';
