@@ -3940,9 +3940,16 @@ progress {
     function translateText(value) {
       var trimmed = value.trim();
       if (!trimmed) return value;
-      var replacement = (language === 'en' ? translations[trimmed] : reverse[trimmed]);
-      if (!replacement) return value;
-      return value.replace(trimmed, replacement);
+      var dictionary = language === 'en' ? translations : reverse;
+      if (dictionary[trimmed]) return value.replace(trimmed, dictionary[trimmed]);
+      // Translate known phrases inside generated labels that also contain scores or counts.
+      var keys = Object.keys(dictionary).filter(function (key) { return key.length >= 3; })
+        .sort(function (a, b) { return b.length - a.length; });
+      var result = value;
+      keys.forEach(function (key) {
+        if (result.indexOf(key) !== -1) result = result.split(key).join(dictionary[key]);
+      });
+      return result;
     }
     function walk(root) {
       var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
@@ -3961,11 +3968,13 @@ progress {
       document.documentElement.lang = language;
       document.title = language === 'en' ? 'Clinical Assessment Questionnaire Platform - NDI, DASH, SF-12, TSK, PSEQ & SEE Scale' : '臨床評估問卷平台 - NDI, DASH, SF-12, TSK, PSEQ & SEE Scale';
       walk(document.body);
-      if (language === 'en') {
-        document.querySelectorAll('[id$="-progress-text"]').forEach(function (el) {
+      document.querySelectorAll('[id$="-progress-text"]').forEach(function (el) {
+        if (language === 'en') {
           el.textContent = el.textContent.replace(/(\d+%)\s*完成\s*\((\d+)\/(\d+)\s*題\)/, '$1 Complete ($2/$3 questions)');
-        });
-      }
+        } else {
+          el.textContent = el.textContent.replace(/(\d+%)\s*Complete\s*\((\d+)\/(\d+)\s*questions\)/, '$1 完成 ($2/$3 題)');
+        }
+      });
       var btn = document.getElementById('language-switch-btn');
       if (btn) btn.textContent = language === 'en' ? '繁體中文' : 'English';
     }
@@ -3989,6 +3998,9 @@ progress {
         document.documentElement.lang = 'en';
         document.title = 'Clinical Assessment Questionnaire Platform - NDI, DASH, SF-12, TSK, PSEQ & SEE Scale';
         walk(document.body);
+        document.querySelectorAll('[id$="-progress-text"]').forEach(function (el) {
+          el.textContent = el.textContent.replace(/(\d+%)\s*完成\s*\((\d+)\/(\d+)\s*題\)/, '$1 Complete ($2/$3 questions)');
+        });
       }
       var observer = new MutationObserver(function (records) {
         if (records.some(function (record) { return record.addedNodes.length > 0; })) {
