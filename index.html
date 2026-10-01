@@ -1486,6 +1486,20 @@ progress {
                     </div>
                 </div>
 
+                <!-- PSEQ Card -->
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-5 relative">
+                    <div class="flex justify-between items-start mb-3">
+                        <h3 class="font-bold text-slate-800 text-sm">疼痛自我效能量表 (PSEQ)</h3>
+                        <span class="text-xs bg-teal-50 text-teal-800 px-2.5 py-0.5 rounded-full border border-teal-200 font-medium">疼痛應對信心</span>
+                    </div>
+                    <div class="text-3xl font-extrabold text-teal-700 mb-1" id="summary-pseq-score">— / 60</div>
+                    <div class="text-xs text-slate-500 mb-3" id="summary-pseq-raw">(原始總分：— / 60)</div>
+                    <div class="border-t border-slate-200 pt-3">
+                        <div class="text-xs font-medium text-slate-500 uppercase tracking-wider">作答狀態：</div>
+                        <div class="text-xs font-bold text-slate-800 mt-0.5" id="summary-pseq-complete">尚未完成</div>
+                    </div>
+                </div>
+
                 <!-- SEE Card -->
                 <div class="bg-slate-50 border border-slate-200 rounded-xl p-5 relative">
                     <div class="flex justify-between items-start mb-3">
@@ -1518,6 +1532,7 @@ progress {
                     <div id="breakdown-dash-container"></div>
                     <div id="breakdown-sf12-container"></div>
                     <div id="breakdown-tsk-container"></div>
+                    <div id="breakdown-pseq-container"></div>
                     <div id="breakdown-see-container"></div>
                 </div>
             </div>
@@ -2363,7 +2378,7 @@ progress {
             }
 
             // Summary report (tabIndex === 7) is assessor only
-            if (tabIndex === 6 && !isAssessorMode) {
+            if (tabIndex === 7 && !isAssessorMode) {
                 showToast('總結報告僅限評估員解鎖後檢視！', 'error');
                 return;
             }
@@ -2378,7 +2393,7 @@ progress {
 
             currentTab = tabIndex;
             updateTabUI();
-            if (tabIndex === 6) {
+            if (tabIndex === 7) {
                 calculateAndDisplaySummary();
             }
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2736,7 +2751,21 @@ progress {
                 tskSev = tskScore >= 37 ? "較高運動恐懼程度 (≥37)" : "較低運動恐懼程度 (<37)";
             }
 
-            // 5. SEE Scale Calculation
+            // 5. PSEQ: 10 items scored from 0 to 6; total range 0-60.
+            let pseqSum = 0;
+            let pseqAnswered = 0;
+            const pseqDetails = [];
+            for (let i = 0; i < pseqQuestions.length; i++) {
+                const selected = document.querySelector(`input[name="pseq_${i}"]:checked`);
+                const val = selected ? parseInt(selected.value, 10) : null;
+                if (selected) pseqAnswered++;
+                if (val !== null && Number.isFinite(val)) pseqSum += val;
+                pseqDetails.push({ q: pseqQuestions[i], score: val });
+            }
+            const pseqComplete = pseqAnswered === pseqQuestions.length;
+            const pseqScore = pseqComplete ? pseqSum : null;
+
+            // 6. SEE Scale Calculation
             let seeSum = 0;
             const seeDetails = [];
             for (let i = 0; i < 9; i++) {
@@ -2757,6 +2786,7 @@ progress {
                 dash: { score: dashScore.toFixed(1), severity: dashSev, scored: dashScored, details: dashDetails },
                 sf12: sf12Result,
                 tsk: { score: tskScore, severity: tskSev, details: tskDetails, complete: tskComplete },
+                pseq: { score: pseqScore, raw: `${pseqSum} / 60`, answered: pseqAnswered, complete: pseqComplete, details: pseqDetails },
                 see: { mean: seeMean.toFixed(1), raw: `${seeSum} / 90`, severity: seeSev, details: seeDetails }
             };
         }
@@ -2785,6 +2815,10 @@ progress {
             document.getElementById('summary-tsk-score').innerText = res.tsk.complete ? `${res.tsk.score} / 68` : '—';
             document.getElementById('summary-tsk-severity').innerText = res.tsk.severity;
 
+            document.getElementById('summary-pseq-score').innerText = res.pseq.complete ? `${res.pseq.score} / 60` : '— / 60';
+            document.getElementById('summary-pseq-raw').innerText = `(已答題目合計：${res.pseq.raw}；已答 ${res.pseq.answered}/10 題)`;
+            document.getElementById('summary-pseq-complete').innerText = res.pseq.complete ? '10/10 題已完成' : `尚有 ${10 - res.pseq.answered} 題未完成`;
+
             document.getElementById('summary-see-score').innerText = `${res.see.mean} / 10`;
             document.getElementById('summary-see-raw').innerText = `(原始總分: ${res.see.raw})`;
             document.getElementById('summary-see-severity').innerText = res.see.severity;
@@ -2812,6 +2846,11 @@ progress {
             res.tsk.details.forEach((d, i) => tskHtml += `<li><strong>${i+1}. ${d.q}</strong>: ${d.score} 分</li>`);
             tskHtml += `</ul>`;
             document.getElementById('breakdown-tsk-container').innerHTML = tskHtml;
+
+            let pseqHtml = `<h4 class="font-bold text-xs text-teal-800 uppercase mb-2">PSEQ 疼痛自我效能細節</h4><ul class="space-y-1 text-xs text-slate-600">`;
+            res.pseq.details.forEach((d, i) => pseqHtml += `<li><strong>${i+1}. ${d.q}</strong>: 得分 ${d.score ?? '未作答'}</li>`);
+            pseqHtml += `</ul>`;
+            document.getElementById('breakdown-pseq-container').innerHTML = pseqHtml;
 
             let seeHtml = `<h4 class="font-bold text-xs text-teal-800 uppercase mb-2">SEE 運動自我效能細節</h4><ul class="space-y-1 text-xs text-slate-600">`;
             res.see.details.forEach((d, i) => seeHtml += `<li><strong>${i+1}. ${d.q}</strong>: ${d.score} 分</li>`);
@@ -3075,7 +3114,7 @@ progress {
             (rec.tsk?.details || []).forEach((d, i) => restoreRadio(`tsk_${i}`, d.rawScore ?? d.score));
             (rec.see?.details || []).forEach((d, i) => restoreRadio(`see_${i}`, d.score));
 
-            switchTab(6);
+            switchTab(7);
             showToast(`已載入個案 ${rec.name} (${timepoint}) 總結`, 'success');
         }
 
