@@ -863,6 +863,13 @@ progress {
     width: 100%;
     overflow: visible !important;
 }
+.pseq-scale-options {
+    display: grid !important;
+    grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+    gap: 7px;
+    width: 100%;
+    overflow: visible !important;
+}
 .see-scale-option {
     position: relative;
     min-width: 0 !important;
@@ -1296,13 +1303,14 @@ progress {
             <div class="flex justify-between items-start border-b pb-4 mb-3">
                 <div>
                     <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2"><i class="fa-solid fa-heart-pulse text-teal-600"></i>疼痛自我效能量表 (PSEQ)</h2>
-                    <p class="text-sm text-slate-600 mt-1">請評估您目前有多大信心，即使感到疼痛，您仍能做到以下各項事情。</p>
+                    <p class="text-sm text-slate-600 mt-1">請依照以下填寫說明，選擇最能代表您目前信心程度的數字。</p>
                 </div>
                 <span class="text-xs bg-slate-100 text-slate-600 px-3 py-1 rounded-full border border-slate-200 font-medium">10 題</span>
             </div>
             <div class="mb-5 p-4 rounded-xl bg-teal-50 border border-teal-200 text-sm text-slate-800 leading-relaxed">
                 <p class="font-bold mb-2">填寫說明</p>
-                <p>請在每一題下方的量表中，圈選最能代表您目前信心程度的數字：</p>
+                <p>請評估您目前有多大信心，即使感到疼痛，您仍能做到以下各項事情。</p>
+                <p class="mt-2">請在每一題下方的量表中，圈選最能代表您目前信心程度的數字：</p>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 my-3 font-bold">
                     <div class="bg-white rounded-lg border border-rose-200 px-3 py-2 text-rose-700">0 = 完全沒有信心</div>
                     <div class="bg-white rounded-lg border border-teal-300 px-3 py-2 text-teal-800 sm:text-right">6 = 完全有信心</div>
@@ -2193,7 +2201,7 @@ progress {
             pseqQuestions.forEach((qText, qIdx) => {
                 html += `<div class="p-4 rounded-xl border border-slate-200 bg-slate-50/50 pseq-item" data-index="${qIdx}">
                     <p class="text-xs sm:text-sm font-bold text-slate-800 mb-3">${qIdx + 1}. ${qText}</p>
-                    <div class="see-scale-options">`;
+                    <div class="pseq-scale-options">`;
                 for (let i = 0; i <= 7; i++) {
                     html += `<label class="see-scale-option" for="pseq_${qIdx}_${i}" aria-label="${i} 分">
                         <input type="radio" id="pseq_${qIdx}_${i}" name="pseq_${qIdx}" value="${i}" onchange="updateSectionProgress('pseq', 10); clearQuestionHighlight('pseq', ${qIdx})">
