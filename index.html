@@ -3938,16 +3938,16 @@ progress {
       if (btn) btn.textContent = language === 'en' ? '繁體中文' : 'English';
     }
     function addButton() {
-      var controls = document.querySelector('header .flex.items-center.justify-between > div:last-child') || document.querySelector('header .max-w-7xl');
-      if (!controls || document.getElementById('language-switch-btn')) return;
+      if (document.getElementById('language-switch-btn')) return;
       var button = document.createElement('button');
       button.id = 'language-switch-btn';
       button.type = 'button';
-      button.className = 'px-3 py-1.5 bg-teal-700 hover:bg-teal-600 text-white text-xs font-semibold rounded-lg border border-teal-500 transition whitespace-nowrap';
       button.textContent = language === 'en' ? '繁體中文' : 'English';
       button.setAttribute('aria-label', 'Switch language');
+      button.setAttribute('title', '繁體中文 / English');
+      button.style.cssText = 'position:fixed;top:76px;right:16px;z-index:99999;display:block;visibility:visible;opacity:1;background:#0f766e;color:#fff;border:2px solid #5eead4;border-radius:10px;padding:10px 16px;font-size:14px;font-weight:700;line-height:1.2;box-shadow:0 4px 14px rgba(0,0,0,.35);cursor:pointer;';
       button.addEventListener('click', applyLanguage);
-      controls.insertBefore(button, controls.firstChild);
+      document.body.appendChild(button);
       if (language === 'en') {
         document.documentElement.lang = 'en';
         document.title = 'Clinical Assessment Questionnaire Platform - NDI, DASH, SF-12, TSK, PSEQ & SEE Scale';
