@@ -1319,7 +1319,7 @@ progress {
             <div class="mb-5 p-4 sm:p-5 rounded-xl bg-teal-50/80 border border-teal-200 text-sm text-slate-800 leading-relaxed">
                 <div class="flex items-start gap-3">
                     <div class="shrink-0 w-9 h-9 rounded-full bg-teal-600 text-white flex items-center justify-center shadow-sm">
-                        <i class="fa-solid fa-circle-info"></i>
+                        <i class="fa-solid fa-circle-info text-base"></i>
                     </div>
                     <div class="min-w-0">
                         <div class="text-sm sm:text-base font-extrabold text-teal-950 mb-1">填寫說明</div>
@@ -1598,6 +1598,7 @@ progress {
                             <th class="p-3">DASH</th>
                             <th class="p-3">SF-12 (PCS/MCS)</th>
                             <th class="p-3">TSK</th>
+                            <th class="p-3">PSEQ</th>
                             <th class="p-3">SEE</th>
                             <th class="p-3 text-right">操作</th>
                         </tr>
@@ -2232,7 +2233,7 @@ progress {
             html += `<div class="mb-6 p-4 sm:p-5 rounded-xl bg-teal-50 border-2 border-teal-300 shadow-sm">
                 <div class="flex items-start gap-3">
                     <div class="shrink-0 w-9 h-9 rounded-full bg-teal-600 text-white flex items-center justify-center shadow-sm">
-                        <i class="fa-solid fa-circle-info"></i>
+                        <i class="fa-solid fa-circle-info text-base"></i>
                     </div>
                     <div class="min-w-0">
                         <div class="text-sm sm:text-base font-extrabold text-teal-950 mb-1">請先閱讀以下說明，再回答每一題</div>
@@ -2963,6 +2964,7 @@ progress {
                     <td class="p-3">${r.dash.score}</td>
                     <td class="p-3">${r.sf12.pcs} / ${r.sf12.mcs}</td>
                     <td class="p-3">${r.tsk.score} / 68</td>
+                    <td class="p-3">${r.pseq?.complete ? `${r.pseq.score} / 60` : '— / 60'}</td>
                     <td class="p-3">${r.see.mean}</td>
                     <td class="p-3 text-right">
                         <button onclick="loadRecord('${r.id}', '${r.timepoint}')" class="text-teal-600 hover:text-teal-800 font-medium px-2 py-1 rounded bg-teal-50 mr-1">檢視</button>
