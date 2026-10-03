@@ -137,16 +137,15 @@
     </style>
 
 <style id="see-info-bar-fit-fix">
-/* Keep PSEQ information text visually consistent and emphasize the instructions. */
-.pseq-info-bar p,
-.pseq-info-bar .text-sm,
-.pseq-info-bar .text-sm.sm\\:text-base {
+/* PSEQ: emphasize the two longer English instruction paragraphs. */
+.pseq-info-bar p:nth-of-type(2),
+.pseq-info-bar p:nth-of-type(3) {
     font-weight: 700 !important;
 }
 
-/* Keep the SEE English instruction on one line without changing the SEE question renderer. */
+/* Keep the SEE English instruction on one line and make it slightly larger. */
 #see-questions-container > div:first-child > div.min-w-0 > p {
-    font-size: clamp(0.68rem, 1.15vw, 0.95rem) !important;
+    font-size: clamp(0.78rem, 1.3vw, 1rem) !important;
     white-space: nowrap !important;
 }
 </style>
