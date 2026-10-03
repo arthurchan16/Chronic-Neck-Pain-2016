@@ -137,6 +137,13 @@
     </style>
 
 <style id="see-info-bar-fit-fix">
+/* Keep PSEQ information text visually consistent and emphasize the instructions. */
+.pseq-info-bar p,
+.pseq-info-bar .text-sm,
+.pseq-info-bar .text-sm.sm\\:text-base {
+    font-weight: 700 !important;
+}
+
 /* Keep the SEE English instruction on one line without changing the SEE question renderer. */
 #see-questions-container > div:first-child > div.min-w-0 > p {
     font-size: clamp(0.68rem, 1.15vw, 0.95rem) !important;
@@ -1354,7 +1361,7 @@ progress {
                     <div class="enhanced-progress-container h-5 sm:h-6 w-full"><div id="pseq-progress-bar" class="enhanced-progress-bar h-full w-0 shadow-sm"></div></div>
                 </div>
             </div>
-            <div class="mb-5 p-4 sm:p-5 rounded-xl bg-teal-50/80 border border-teal-200 text-sm text-slate-800 leading-relaxed">
+            <div class="mb-5 p-4 sm:p-5 rounded-xl bg-teal-50/80 border border-teal-200 text-sm text-slate-800 leading-relaxed pseq-info-bar">
                 <div class="flex items-start gap-3">
                     <div class="shrink-0 w-9 h-9 rounded-full bg-teal-600 text-white flex items-center justify-center shadow-sm">
                         <i class="fa-solid fa-circle-info text-base"></i>
@@ -3805,7 +3812,7 @@ progress {
       '不適用 (我不駕駛 / 開車)':'Not applicable (I do not drive)',
       '不適用':'Not applicable','沒有困難':'No difficulty','少許困難':'Mild difficulty','中度困難':'Moderate difficulty','非常困難':'Severe difficulty','不能做到':'Unable',
       '完全沒有':'Not at all','少許':'A little','中度':'Moderately','相當大程度':'Quite a bit','極度':'Extremely',
-      '沒有':'None','輕微':'Mild','嚴重':'Severe','非常不同意':'Strongly disagree','不同意':'Disagree','並非同意或不同意':'Neither agree nor disagree','同意':'Agree','非常同意':'Strongly agree',
+      '沒有':'None','輕微':'Mild','嚴重':'Severe','非常不同意':'Strongly disagree','不同意':'Disagree','並非同意或不同意':'Neither agree nor disagree','同意':'Agree','3 = 同意':'3 = Agree','非常同意':'Strongly agree',
       '極好':'Excellent','很好':'Very good','好':'Good','一般':'Fair','差':'Poor','有很大限制':'Limited a lot','有一點限制':'Limited a little','沒有任何限制':'Not limited at all',
       '常常如此':'All of the time','大部份時間':'Most of the time','大部分時間':'Most of the time','有時':'Some of the time','偶爾':'A little of the time','從來沒有':'None of the time',
       '已儲存的評估紀錄與題項級資料調閱 (評估員專用)':'Saved assessment records and item-level data (assessor only)',
