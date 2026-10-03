@@ -3790,8 +3790,8 @@ progress {
       '運動前':'Pre-intervention','五星期運動後':'Post-intervention (5 weeks)','六個月後':'6-month follow-up',
       '前往 NDI 問卷':'Continue to NDI Questionnaire','前往 DASH 問卷':'Continue to DASH Questionnaire',
       '前往 SF-12 問卷':'Continue to SF-12 Questionnaire','前往 TSK 問卷':'Continue to TSK Questionnaire',
-      '前往 PSEQ 問卷':'Continue to PSEQ Questionnaire','前往 SEE Scale':'Continue to SEE Scale',
-      '上一步':'Previous','下一步':'Next','填寫進度即時預覽':'Completion Progress',
+      '前往 PSEQ 問卷':'Continue to PSEQ Questionnaire','前往 SEE Scale 問卷':'Continue to SEE Scale','前往 SEE Scale':'Continue to SEE Scale',
+      '上一步':'Previous','下一步':'Next','填寫進度即時預覽 (SEE)':'Completion Progress (SEE Scale)','填寫進度即時預覽':'Completion Progress',
       '頸椎功能障礙指數 (NDI)':'Neck Disability Index (NDI)',
       '請針對每個項目，選擇一個最符合您「今天」狀況的描述。':'For each item, select the description that best reflects your situation today.',
       '上肢功能受損程度問卷 (DASH)':'Disabilities of the Arm, Shoulder and Hand (DASH)',
@@ -3847,7 +3847,7 @@ progress {
       '此動作無法復原。':'This action cannot be undone.','確認刪除':'Confirm Delete','確認清除全部問卷紀錄':'Confirm Clear All Records',
       '您即將刪除所有已儲存的過往問卷紀錄。':'You are about to delete all saved questionnaire records.',
       '此動作會永久刪除全部紀錄，且無法復原。':'This will permanently delete all records and cannot be undone.',
-      '評估員登入':'Assessor Login','請輸入評估員共用密碼以存取雲端評估紀錄。':'Enter the shared assessor password to access cloud assessment records.',
+      '評估員登入':'Assessor Login','完成問卷':'Finish Questionnaire','請輸入評估員共用密碼以存取雲端評估紀錄。':'Enter the shared assessor password to access cloud assessment records.',
       '評估員密碼':'Assessor Password','輸入評估員密碼...':'Enter assessor password...',
       '更改評估員密碼':'Change Assessor Password','不需要輸入舊密碼；請先輸入 Master 密碼，再設定新的評估員密碼。':'You do not need the old password. Enter the master password, then set a new assessor password.',
       'Master 密碼':'Master Password','輸入 Master 密碼...':'Enter master password...','新評估員密碼':'New Assessor Password','輸入新的評估員密碼...':'Enter a new assessor password...',
@@ -4251,6 +4251,10 @@ progress {
         }
       }
 
+      // Assessor login button: translate the button label without changing other uses of 「登入」.
+      var assessorLoginBtn = document.querySelector('button[onclick="verifyAssessorPassword()"]');
+      if (assessorLoginBtn) assessorLoginBtn.textContent = language === 'en' ? 'Login' : '登入';
+
       var btn = document.getElementById('language-switch-btn');
       if (btn) btn.textContent = language === 'en' ? '繁體中文' : 'English';
     }
@@ -4291,6 +4295,11 @@ progress {
             n.nodeValue = n.nodeValue.replace(/問題/g, 'Question');
           });
         }
+      }
+      // Keep the assessor login button in English on initial English load as well.
+      if (language === 'en') {
+        var assessorLoginBtn = document.querySelector('button[onclick="verifyAssessorPassword()"]');
+        if (assessorLoginBtn) assessorLoginBtn.textContent = 'Login';
       }
       var observer = new MutationObserver(function (records) {
         if (records.some(function (record) { return record.addedNodes.length > 0; })) {
