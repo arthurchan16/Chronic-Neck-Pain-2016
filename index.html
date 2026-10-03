@@ -136,6 +136,14 @@
         }
     </style>
 
+<style id="see-info-bar-fit-fix">
+/* Keep the SEE English instruction on one line without changing the SEE question renderer. */
+#see-questions-container > div:first-child > div.min-w-0 > p {
+    font-size: clamp(0.68rem, 1.15vw, 0.95rem) !important;
+    white-space: nowrap !important;
+}
+</style>
+
 <style id="clinical-platform-refined-design">
 /* =========================================================
    Unified visual system
@@ -3788,7 +3796,7 @@ progress {
       '以下是假設的情況，請選取您有多少信心可以運動。':'How confident are you right now that you could exercise three times per week for 20 minutes if:',
       '分數越高代表您越有信心。':'',
       '請評估您目前有多大信心，即使感到疼痛，您仍能做到以下各項事情。':'Please rate how confident you are that you can do the following things at present, despite the pain.',
-      '請在每一題下方的量表中，圈選最能代表您目前信心程度的數字：':'To indicate your answer circle one of the numbers on the scale under each item.',
+      '請在每一題下方的量表中，圈選最能代表您目前信心程度的數字。':'To indicate your answer circle one of the numbers on the scale under each item.',
       '完全沒有信心':'Not at all confident','完全有信心':'Completely confident',
       '請注意，本問卷並不是詢問您目前是否有做這些事情，而是詢問您即使感到疼痛，您目前有多大信心能做到這些事情。':'Remember, this questionnaire is not asking whether or not you have been doing these things, but rather how confident you are that you can do them at present, despite the pain.',
       '非駕駛者請選「不適用」':'If you do not drive, select “Not applicable”.',
