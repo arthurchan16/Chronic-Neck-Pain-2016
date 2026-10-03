@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>臨床評估問卷平台 - NDI, DASH, SF-12, TSK, PSEQ & SEE Scale</title>
+    <title>臨床評估平台 - NDI, DASH, SF-12, TSK, PSEQ & SEE Scale</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Supabase client must load before cloud configuration is initialized -->
@@ -1043,7 +1043,7 @@ progress {
                     <i class="fa-solid fa-notes-medical"></i>
                 </div>
                 <div>
-                    <h1 class="font-bold text-lg leading-tight text-slate-100">臨床評估問卷平台</h1>
+                    <h1 class="font-bold text-lg leading-tight text-slate-100">臨床評估平台</h1>
                     <p class="text-xs text-teal-200/80">NDI &bull; DASH &bull; SF-12 &bull; TSK &bull; PSEQ &bull; SEE Scale</p>
                 </div>
             </div>
@@ -3774,7 +3774,7 @@ progress {
     'use strict';
     var language = localStorage.getItem('clinical_platform_language') || 'zh-TW';
     var translations = {
-      '臨床評估問卷平台':'Clinical Assessment Questionnaire Platform',
+      '臨床評估平台':'Clinical Assessment Platform',
       '字體:':'Font size:','語言':'Language',
       '標準字體':'Standard font','標準':'Standard','放大字體':'Larger font','大':'Large','特大字體':'Extra-large font','特大':'Extra-large',
       '參加者模式':'Participant Mode','評估員':'Assessor','鎖定':'Lock',
@@ -4216,7 +4216,7 @@ progress {
       language = language === 'en' ? 'zh-TW' : 'en';
       localStorage.setItem('clinical_platform_language', language);
       document.documentElement.lang = language;
-      document.title = language === 'en' ? 'Clinical Assessment Questionnaire Platform - NDI, DASH, SF-12, TSK, PSEQ & SEE Scale' : '臨床評估問卷平台 - NDI, DASH, SF-12, TSK, PSEQ & SEE Scale';
+      document.title = language === 'en' ? 'Clinical Assessment Platform - NDI, DASH, SF-12, TSK, PSEQ & SEE Scale' : '臨床評估平台 - NDI, DASH, SF-12, TSK, PSEQ & SEE Scale';
       walk(document.body);
       document.querySelectorAll('[id$="-progress-text"]').forEach(function (el) {
         if (language === 'en') {
@@ -4271,7 +4271,7 @@ progress {
       }
       if (language === 'en') {
         document.documentElement.lang = 'en';
-        document.title = 'Clinical Assessment Questionnaire Platform - NDI, DASH, SF-12, TSK, PSEQ & SEE Scale';
+        document.title = 'Clinical Assessment Platform - NDI, DASH, SF-12, TSK, PSEQ & SEE Scale';
         walk(document.body);
         document.querySelectorAll('[id$="-progress-text"]').forEach(function (el) {
           el.textContent = el.textContent.replace(/(\d+%)\s*完成\s*\((\d+)\/(\d+)\s*題\)/, '$1 Complete ($2/$3 questions)');
