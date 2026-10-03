@@ -4263,6 +4263,25 @@ progress {
         document.querySelectorAll('[id$="-progress-text"]').forEach(function (el) {
           el.textContent = el.textContent.replace(/(\d+%)\s*完成\s*\((\d+)\/(\d+)\s*題\)/, '$1 Complete ($2/$3 questions)');
         });
+
+        // Apply the same English question-count fixes on initial page load
+        // when English was already saved in localStorage.
+        document.querySelectorAll('.tab-content span').forEach(function (el) {
+          var t = (el.textContent || '').trim();
+          if (/^\d+\s*題$/.test(t)) el.textContent = t.replace(/題/g, 'questions');
+          if (/^問題\s*\d+$/.test(t)) el.textContent = t.replace(/^問題/, 'Question');
+        });
+
+        // SF-12 English should not retain the Chinese "問題" label.
+        var sf12 = document.getElementById('step-3');
+        if (sf12) {
+          var sf12Walker = document.createTreeWalker(sf12, NodeFilter.SHOW_TEXT);
+          var sf12Nodes = [], sf12Node;
+          while ((sf12Node = sf12Walker.nextNode())) sf12Nodes.push(sf12Node);
+          sf12Nodes.forEach(function (n) {
+            n.nodeValue = n.nodeValue.replace(/問題/g, 'Question');
+          });
+        }
       }
       var observer = new MutationObserver(function (records) {
         if (records.some(function (record) { return record.addedNodes.length > 0; })) {
