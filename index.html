@@ -136,6 +136,12 @@
         }
     </style>
 
+<style id="sf12-question-label-fix">
+/* SF-12 question-number badge: language-neutral number in the badge. */
+.sf12-question-number::before {
+    content: "Question ";
+}
+</style>
 <style id="see-info-bar-fit-fix">
 /* PSEQ: emphasize the two longer English instruction paragraphs. */
 .pseq-info-bar p:nth-of-type(2),
@@ -2198,7 +2204,7 @@ progress {
                     html += `
                     <div class="bg-slate-50/80 rounded-xl border border-teal-200/80 p-4 sm:p-5 mb-6 shadow-2xs">
                         <div class="flex items-start gap-3 border-b border-teal-100 pb-3 mb-4">
-                            <span class="bg-teal-700 text-white font-extrabold px-2.5 py-1 rounded-lg text-xs shadow-2xs shrink-0 mt-0.5">問題 ${q.qNum}</span>
+                            <span class="bg-teal-700 text-white font-extrabold px-2.5 py-1 rounded-lg text-xs shadow-2xs shrink-0 mt-0.5 sf12-question-number">${q.qNum}</span>
                             <h3 class="text-xs sm:text-sm font-bold text-teal-950 leading-relaxed">${q.mainQuestion}</h3>
                         </div>
                         <div class="space-y-3">`;
