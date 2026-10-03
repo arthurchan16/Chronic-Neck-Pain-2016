@@ -1412,7 +1412,7 @@ progress {
                 <div class="bg-slate-50 p-4 rounded-xl border border-teal-200 shadow-sm">
                     <div class="flex justify-between items-center mb-2">
                         <span class="text-xs sm:text-sm font-extrabold text-slate-800 flex items-center gap-2">
-                            <i class="fa-solid fa-chart-pie text-teal-600 text-base"></i>填寫進度即時預覽 (SEE)
+                            <i class="fa-solid fa-chart-pie text-teal-600 text-base"></i>填寫進度即時預覽 (SEE Scale)
                         </span>
                         <span id="see-progress-text" class="text-xs sm:text-sm font-black text-teal-800 bg-teal-100 px-3 py-1 rounded-full border border-teal-300">0% 完成 (0/9 題)</span>
                     </div>
@@ -3791,7 +3791,7 @@ progress {
       '前往 NDI 問卷':'Continue to NDI Questionnaire','前往 DASH 問卷':'Continue to DASH Questionnaire',
       '前往 SF-12 問卷':'Continue to SF-12 Questionnaire','前往 TSK 問卷':'Continue to TSK Questionnaire',
       '前往 PSEQ 問卷':'Continue to PSEQ Questionnaire','前往 SEE Scale 問卷':'Continue to SEE Scale','前往 SEE Scale':'Continue to SEE Scale',
-      '上一步':'Previous','下一步':'Next','填寫進度即時預覽 (SEE)':'Completion Progress (SEE Scale)','填寫進度即時預覽':'Completion Progress',
+      '上一步':'Previous','下一步':'Next','填寫進度即時預覽 (SEE Scale)':'Completion Progress (SEE Scale)','填寫進度即時預覽':'Completion Progress',
       '頸椎功能障礙指數 (NDI)':'Neck Disability Index (NDI)',
       '請針對每個項目，選擇一個最符合您「今天」狀況的描述。':'For each item, select the description that best reflects your situation today.',
       '上肢功能受損程度問卷 (DASH)':'Disabilities of the Arm, Shoulder and Hand (DASH)',
@@ -4256,13 +4256,13 @@ progress {
       if (assessorLoginBtn) assessorLoginBtn.textContent = language === 'en' ? 'Login' : '登入';
 
       var btn = document.getElementById('language-switch-btn');
-      if (btn) btn.textContent = language === 'en' ? '繁體中文' : 'English';
+      if (btn) btn.textContent = language === 'en' ? '中文' : 'English';
     }
     function addButton() {
       // Keep the language switch in its dedicated header control; never create a floating duplicate.
       var button = document.getElementById('language-switch-btn');
       if (!button) return;
-      button.textContent = language === 'en' ? '繁體中文' : 'English';
+      button.textContent = language === 'en' ? '中文' : 'English';
       button.setAttribute('aria-label', language === 'en' ? 'Switch to Traditional Chinese' : 'Switch to English');
       button.setAttribute('title', language === 'en' ? 'Switch to Traditional Chinese' : 'Switch to English');
       if (!button.dataset.languageSwitchBound) {
