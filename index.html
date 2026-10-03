@@ -2259,26 +2259,31 @@ progress {
             const container = document.getElementById('see-questions-container');
             let html = '';
 
-            // Put the key instruction in a prominent, easy-to-scan banner before the questions.
+            // Keep the SEE instruction block language-aware because this HTML is generated
+            // dynamically after the page language may already have been selected.
+            const seeEnglish = language === 'en';
+            const seeInstruction = seeEnglish
+                ? 'How confident are you right now that you could exercise three times per week for 20 minutes if:'
+                : '以下是假設的情況，請選取您有多少信心可以運動。';
+            const seeZeroLabel = seeEnglish ? 'Not Confident' : '完全沒信心';
+            const seeTenLabel = seeEnglish ? 'Very Confident' : '非常有信心';
+
             html += `<div class="mb-6 p-4 sm:p-5 rounded-xl bg-teal-50 border-2 border-teal-300 shadow-sm">
                 <div class="flex items-start gap-3">
                     <div class="shrink-0 w-9 h-9 rounded-full bg-teal-600 text-white flex items-center justify-center shadow-sm">
                         <i class="fa-solid fa-circle-info text-base"></i>
                     </div>
                     <div class="min-w-0">
-                        <div class="text-sm sm:text-base font-extrabold text-teal-950 mb-1">請先閱讀以下說明，再回答每一題</div>
-                        <p class="text-sm sm:text-base font-semibold leading-relaxed text-slate-800">
-                            以下是假設的情況，請選取您有多少信心可以運動。
-                            <span class="text-teal-800">分數越高代表您越有信心。</span>
-                        </p>
+                        ${seeEnglish ? '' : '<div class="text-sm sm:text-base font-extrabold text-teal-950 mb-1">請先閱讀以下說明，再回答每一題</div>'}
+                        <p class="text-sm sm:text-base font-semibold leading-relaxed text-slate-800">${seeInstruction}</p>
                     </div>
                 </div>
                 <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm font-bold">
                     <div class="bg-white rounded-lg border border-rose-200 px-3 py-2 text-rose-700">
-                        <span class="font-black">0</span> = 完全沒信心
+                        <span class="font-black">0</span> = ${seeZeroLabel}
                     </div>
                     <div class="bg-white rounded-lg border border-teal-300 px-3 py-2 text-teal-800 sm:text-right">
-                        <span class="font-black">10</span> = 非常有信心
+                        <span class="font-black">10</span> = ${seeTenLabel}
                     </div>
                 </div>
             </div>`;
@@ -2295,9 +2300,9 @@ progress {
                 }
                 html += `</div>
                     <div class="flex justify-between items-start mt-2 px-1 text-[11px] sm:text-xs font-bold">
-                        <span class="text-rose-600">完全沒信心</span>
+                        <span class="text-rose-600">${seeZeroLabel}</span>
                         
-                        <span class="text-teal-700">非常有信心</span>
+                        <span class="text-teal-700">${seeTenLabel}</span>
                     </div>
                 </div>`;
             });
