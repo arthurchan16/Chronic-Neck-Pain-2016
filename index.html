@@ -2260,7 +2260,7 @@ progress {
             let html = '';
 
             // Keep the original SEE renderer structure; language switching is handled by applyLanguage().
-            html += \`<div class="mb-6 p-4 sm:p-5 rounded-xl bg-teal-50 border-2 border-teal-300 shadow-sm">
+            html += `<div class="mb-6 p-4 sm:p-5 rounded-xl bg-teal-50 border-2 border-teal-300 shadow-sm">
                 <div class="flex items-start gap-3">
                     <div class="shrink-0 w-9 h-9 rounded-full bg-teal-600 text-white flex items-center justify-center shadow-sm">
                         <i class="fa-solid fa-circle-info text-base"></i>
@@ -2281,7 +2281,7 @@ progress {
                         <span class="font-black">10</span> = 非常有信心
                     </div>
                 </div>
-            </div>\`;
+            </div>`;
 
             seeQuestions.forEach((qText, qIdx) => {
                 html += `<div class="p-4 rounded-xl border border-slate-200 bg-slate-50/50 see-item" data-index="${qIdx}">
