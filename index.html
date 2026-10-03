@@ -4216,6 +4216,32 @@ progress {
           el.textContent = el.textContent.replace(/(\d+%)\s*Complete\s*\((\d+)\/(\d+)\s*questions\)/, '$1 完成 ($2/$3 題)');
         }
       });
+
+      // Translate standalone question-count badges such as "10 題" / "30 題".
+      document.querySelectorAll('.tab-content span').forEach(function (el) {
+        var t = (el.textContent || '').trim();
+        if (language === 'en') {
+          if (/^\d+\s*題$/.test(t)) el.textContent = t.replace(/題/g, 'questions');
+          if (/^問題\s*\d+$/.test(t)) el.textContent = t.replace(/^問題/, 'Question');
+        } else {
+          if (/^\d+\s*questions$/.test(t)) el.textContent = t.replace(/questions/g, '題');
+          if (/^Question\s*\d+$/.test(t)) el.textContent = t.replace(/^Question/, '問題');
+        }
+      });
+
+      // SF-12 English should not retain the Chinese "問題" label.
+      if (language === 'en') {
+        var sf12 = document.getElementById('step-3');
+        if (sf12) {
+          var sf12Walker = document.createTreeWalker(sf12, NodeFilter.SHOW_TEXT);
+          var sf12Nodes = [], sf12Node;
+          while ((sf12Node = sf12Walker.nextNode())) sf12Nodes.push(sf12Node);
+          sf12Nodes.forEach(function (n) {
+            n.nodeValue = n.nodeValue.replace(/問題/g, 'Question');
+          });
+        }
+      }
+
       var btn = document.getElementById('language-switch-btn');
       if (btn) btn.textContent = language === 'en' ? '繁體中文' : 'English';
     }
